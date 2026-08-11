@@ -9,10 +9,19 @@ services:
       # will NOT gain this database — see "Migrating a pre-rename setup" in
       # the README.
       POSTGRES_DB: ${POSTGRES_DB:-energlens}
+      # Read by the init script below, which creates the test database that
+      # POSTGRES_DB cannot. Kept in step with scripts/db.env by
+      # backend/tests/test_config.py.
+      PGDATABASE_TEST: ${PGDATABASE_TEST:-energlens_test}
     ports:
-      - "5432:5432"
+      # Host port follows PGPORT so `PGPORT=5433 make db-up` publishes where
+      # scripts/db.sh then probes; a fixed 5432 here makes that advice time out.
+      - "${PGPORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Creates energlens_test on an empty volume, so the Docker path and
+      # scripts/pgdev.sh produce the same two databases.
+      - ./scripts/pg-init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       # Not pg_isready: it answers for the postmaster and reports success even
       # when the named database is missing, which is exactly the failure a

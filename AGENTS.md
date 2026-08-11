@@ -67,10 +67,46 @@ write** to edit files under `.github/workflows/`. On a classic PAT those are the
 the fine-grained UI. `gh auth token` returns the *active* account's token, which
 carries classic scopes.
 
+## Commands
+
+Everything runs through `make` from the repo root. Use it rather than raw `uv`,
+`npm` or `alembic`: the targets know the working directories, and the database
+ones run a preflight that explains failures instead of raising
+`ConnectionRefusedError`.
+
+| Task | Command |
+| --- | --- |
+| Set up a clone | `make setup` |
+| Start Postgres | `make db-up` |
+| **The gate — run before calling anything done** | `make check` |
+| One backend test | `make test-backend PYTEST_ARGS="-k currency"` |
+| New migration | `make migration m="add reference to bill"` |
+| Check migrations match the models | `make migrate-check` |
+| Reset the database | `make db-reset` (drops both databases) |
+| Run the app | `make dev-api`, `make dev-web` |
+| Everything else | `make help` |
+
+`make check` is exactly what the merge-gating CI jobs run, so the two cannot
+disagree. `deploy-frontend.yml` is not part of it — that is a deploy, not a
+gate, and it depends on production-only repository variables.
+
 ## Conventions
 
-- Python is managed with `uv` (`uv sync`, `uv run …`) in `backend/` and `ingest/`.
-- Local Postgres without Docker: `scripts/pgdev.sh init` / `start`.
-- Tests: `cd backend && uv run pytest`, `cd ingest && uv run pytest`,
-  `cd frontend && npx tsc -b`.
-- Never commit `.env`, tokens, or credentials.
+- Python is managed with `uv` in `backend/` and `ingest/`; the `make` targets
+  wrap it. Node is pinned by CI at 22.
+- Database identity — user, port, all three database names — is defined in
+  `scripts/db.env`. `scripts/db.sh` and `scripts/pgdev.sh` source it; the
+  environment overrides it, so `PGPORT=5433 make db-up` works. Four consumers
+  cannot read it when they need it and so keep literal copies —
+  `backend/app/config.py`, the CI service block, `docker-compose.yml` and
+  `.env.example`. **`backend/tests/test_config.py` fails if any copy drifts**,
+  so change `db.env` and let the test tell you what else to update.
+- Three databases: `energlens` (yours), `energlens_test` (every table dropped on
+  each test run), and `energlens_migrations` (throwaway, rebuilt by Alembic
+  alone for `make migrate-check` — checking migrations against the test database
+  would compare the models with themselves and never see drift).
+- Because two of those are destroyed routinely, `scripts/db.sh` and
+  `conftest.py` both refuse to run when the target host is not localhost —
+  whether that host comes from `PGHOST` or from `DATABASE_URL`.
+- Never commit `.env`, tokens, credentials, real bill PDFs, or
+  `.claude/settings.local.json`.

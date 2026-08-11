@@ -10,12 +10,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PGDATA="$ROOT/.pgdata"
-PGPORT="${PGPORT:-5432}"
 LOG="$ROOT/.pglog"
 
-# The database names live here only; everything else derives from them.
-DB_MAIN="${PGDATABASE:-energlens}"
-DB_TEST="${PGDATABASE_TEST:-${DB_MAIN}_test}"
+# Port and database names come from the one file that defines them, so running
+# this script directly — as README's "Migrating a pre-rename setup" does — cannot
+# create differently named databases from the ones `make` expects.
+. "$ROOT/scripts/db.env"
+DB_MAIN="$PGDATABASE"
+DB_TEST="$PGDATABASE_TEST"
 
 if [ -z "${PGBIN:-}" ]; then
   if ! brew_prefix="$(brew --prefix postgresql@16 2>/dev/null)"; then
@@ -42,11 +44,11 @@ ensure_running() {
 
 # createdb errors when the database exists, which must not fail a re-run.
 ensure_db() {
-  if "$PGBIN/psql" -h localhost -p "$PGPORT" -U energy -d postgres -tAc \
+  if "$PGBIN/psql" -h localhost -p "$PGPORT" -U "$PGUSER" -d postgres -tAc \
       "SELECT 1 FROM pg_database WHERE datname = '$1'" | grep -q 1; then
     echo "  $1 already exists"
   else
-    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U energy "$1"
+    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U "$PGUSER" "$1"
     echo "  $1 created"
   fi
 }
@@ -56,12 +58,12 @@ case "${1:-}" in
     # Idempotent by design: a rename, an interrupted first run, or a half
     # initialized .pgdata all have to be repairable by re-running init.
     if [ ! -d "$PGDATA" ]; then
-      "$PGBIN/initdb" -D "$PGDATA" -U energy --auth=trust --encoding=UTF8 >/dev/null
+      "$PGBIN/initdb" -D "$PGDATA" -U "$PGUSER" --auth=trust --encoding=UTF8 >/dev/null
     fi
     ensure_running
     ensure_db "$DB_MAIN"
     ensure_db "$DB_TEST"
-    echo "ready: $DB_MAIN + $DB_TEST on port $PGPORT (user: energy)"
+    echo "ready: $DB_MAIN + $DB_TEST on port $PGPORT (user: $PGUSER)"
     ;;
   start)
     "$PGBIN/pg_ctl" -D "$PGDATA" -l "$LOG" -o "-p $PGPORT" start
