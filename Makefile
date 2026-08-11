@@ -30,9 +30,13 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
 .NOTPARALLEL:
 .DEFAULT_GOAL := help
 
+# Only names with rules below. A phony target with no recipe exits 0 while
+# doing nothing, which on the repo's authoritative command surface reads as
+# "it passed"; a missing target at least fails loudly. fmt/lint/lint-py/lint-web
+# arrive with the linters that back them.
 .PHONY: help setup env db-up db-down db-ensure db-reset db-shell db-preflight \
         migrate migration migrate-check seed dev-api dev-web \
-        fmt lint lint-py lint-web typecheck build-web \
+        typecheck build-web \
         test test-backend test-ingest test-frontend \
         check ci-backend ci-frontend clean
 
@@ -83,6 +87,15 @@ migrate: ## Apply migrations to the app database
 	@$(DB) preflight dev
 	$(BACKEND) alembic upgrade head
 
+# Mirrors the "Migrations apply and match the models" step in backend-ci.yml.
+# Runs against a throwaway database built by Alembic alone: the test database's
+# schema comes from Base.metadata.create_all, so checking that one would compare
+# the models against themselves and never see the drift.
+migrate-check: ## Assert migrations apply cleanly and match the models
+	@$(DB) scratch
+	DATABASE_URL="$$($(DB) url scratch)" $(BACKEND) alembic upgrade head
+	DATABASE_URL="$$($(DB) url scratch)" $(BACKEND) alembic check
+
 migration: ## New migration: make migration m="add reference to bill"
 	@test -n "$(m)" || { echo 'usage: make migration m="short description"' >&2; exit 1; }
 	@$(DB) preflight dev
@@ -132,7 +145,8 @@ check: ci-backend ci-frontend ## Run everything CI runs. The gate.
 # ci-frontend depends on test-frontend rather than relying on build-web to run
 # tsc first, so that adding a real frontend test runner to test-frontend lands
 # in `make check` automatically instead of silently escaping the gate.
-ci-backend: test-backend test-ingest
+# Same order as backend-ci.yml: the migration gate runs before the suites.
+ci-backend: migrate-check test-backend test-ingest
 ci-frontend: test-frontend build-web
 
 clean: ## Remove build output and caches

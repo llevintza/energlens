@@ -25,14 +25,44 @@ def _read_db_env() -> dict[str, str]:
     return values
 
 
+_LOCAL_HOSTS = {"", "localhost", "127.0.0.1", "::1", "0.0.0.0", "host.docker.internal"}
+
+
+def _refuse_remote(url: str) -> None:
+    """This suite drops every table it connects to. Keep it on localhost.
+
+    scripts/db.sh makes the same refusal for the shell entry points; without it
+    here, the one path that can name an arbitrary host would be the one path
+    with no guard at all.
+    """
+    host = re.sub(r"[:/?].*$", "", re.sub(r"^[^:]*://(?:[^@/]*@)?", "", url))
+    if host not in _LOCAL_HOSTS:
+        raise SystemExit(
+            f"Refusing to run the test suite against '{host}': it is not localhost,\n"
+            f"and every table in the target database is dropped on each run.\n\n"
+            f"Fix: unset ENERGLENS_TEST_DATABASE_URL"
+        )
+
+
 def _test_database_url() -> str:
     if override := os.environ.get("ENERGLENS_TEST_DATABASE_URL"):
+        _refuse_remote(override)
         return override
+    # Environment over file, matching what scripts/db.sh does when it sources
+    # db.env — otherwise `PGPORT=5433 make test-backend` preflights one cluster
+    # and then connects to another. Only PGDATABASE_TEST is consulted for the
+    # database name, so an exported PGDATABASE aimed at development is inert.
     env = _read_db_env()
-    return (
-        f"postgresql+asyncpg://{env['PGUSER']}:{env['PGPASSWORD']}"
-        f"@{env['PGHOST']}:{env['PGPORT']}/{env['PGDATABASE_TEST']}"
+
+    def setting(key: str) -> str:
+        return os.environ.get(key) or env[key]
+
+    url = (
+        f"postgresql+asyncpg://{setting('PGUSER')}:{setting('PGPASSWORD')}"
+        f"@{setting('PGHOST')}:{setting('PGPORT')}/{setting('PGDATABASE_TEST')}"
     )
+    _refuse_remote(url)
+    return url
 
 
 # Set before importing app.*, which reads the environment at import time.
@@ -58,8 +88,9 @@ def pytest_configure(config):
 
     scripts/db.sh owns these diagnostics, so `make test-backend` and a bare
     `uv run pytest` — what an agent that ignores the Makefile will type — give
-    identical advice. Skipped when the URL was overridden, since the script
-    checks the database named in scripts/db.env.
+    identical advice. Skipped only when the URL was overridden, since the script
+    checks the database named in scripts/db.env; _refuse_remote has already
+    established that the override is local.
     """
     if os.environ.get("ENERGLENS_TEST_DATABASE_URL") or not _DB_SH.exists():
         return

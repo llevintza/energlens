@@ -81,6 +81,7 @@ ones run a preflight that explains failures instead of raising
 | **The gate — run before calling anything done** | `make check` |
 | One backend test | `make test-backend PYTEST_ARGS="-k currency"` |
 | New migration | `make migration m="add reference to bill"` |
+| Check migrations match the models | `make migrate-check` |
 | Reset the database | `make db-reset` (drops both databases) |
 | Run the app | `make dev-api`, `make dev-web` |
 | Everything else | `make help` |
@@ -93,14 +94,19 @@ gate, and it depends on production-only repository variables.
 
 - Python is managed with `uv` in `backend/` and `ingest/`; the `make` targets
   wrap it. Node is pinned by CI at 22.
-- Database identity — user, port, both database names — is defined in
+- Database identity — user, port, all three database names — is defined in
   `scripts/db.env`. `scripts/db.sh` and `scripts/pgdev.sh` source it; the
   environment overrides it, so `PGPORT=5433 make db-up` works. Four consumers
   cannot read it when they need it and so keep literal copies —
   `backend/app/config.py`, the CI service block, `docker-compose.yml` and
   `.env.example`. **`backend/tests/test_config.py` fails if any copy drifts**,
   so change `db.env` and let the test tell you what else to update.
-- The test suite drops every table in `energlens_test` on each run. That is why
-  the preflight refuses to run when `DATABASE_URL` points off localhost.
+- Three databases: `energlens` (yours), `energlens_test` (every table dropped on
+  each test run), and `energlens_migrations` (throwaway, rebuilt by Alembic
+  alone for `make migrate-check` — checking migrations against the test database
+  would compare the models with themselves and never see drift).
+- Because two of those are destroyed routinely, `scripts/db.sh` and
+  `conftest.py` both refuse to run when the target host is not localhost —
+  whether that host comes from `PGHOST` or from `DATABASE_URL`.
 - Never commit `.env`, tokens, credentials, real bill PDFs, or
   `.claude/settings.local.json`.

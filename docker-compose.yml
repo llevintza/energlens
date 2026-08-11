@@ -14,7 +14,9 @@ services:
       # backend/tests/test_config.py.
       PGDATABASE_TEST: ${PGDATABASE_TEST:-energlens_test}
     ports:
-      - "5432:5432"
+      # Host port follows PGPORT so `PGPORT=5433 make db-up` publishes where
+      # scripts/db.sh then probes; a fixed 5432 here makes that advice time out.
+      - "${PGPORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
       # Creates energlens_test on an empty volume, so the Docker path and

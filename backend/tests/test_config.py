@@ -49,6 +49,9 @@ class TestDatabaseIdentity:
         assert f"POSTGRES_USER: {env['PGUSER']}" in text
         assert f"${{POSTGRES_DB:-{env['PGDATABASE']}}}" in text
         assert f"${{PGDATABASE_TEST:-{env['PGDATABASE_TEST']}}}" in text
+        # Without this the advertised PGPORT override starts a container on one
+        # port while scripts/db.sh waits on another, and db-up times out.
+        assert f'"${{PGPORT:-{env["PGPORT"]}}}:5432"' in text
 
     def test_ci_postgres_service_matches_scripts_db_env(self):
         env = _read_db_env()
@@ -68,7 +71,15 @@ class TestDatabaseIdentity:
             text = (REPO_ROOT / "scripts" / name).read_text()
             assert 'scripts/db.env"' in text, f"{name} does not source scripts/db.env"
 
-    def test_test_database_is_not_the_app_database(self):
-        # The suite drops every table in PGDATABASE_TEST on each run.
+    def test_the_three_databases_are_distinct(self):
+        # The suite drops every table in PGDATABASE_TEST, and migrate-check
+        # drops PGDATABASE_MIGRATIONS outright, on every run.
         env = _read_db_env()
-        assert env["PGDATABASE_TEST"] != env["PGDATABASE"]
+        names = [env["PGDATABASE"], env["PGDATABASE_TEST"], env["PGDATABASE_MIGRATIONS"]]
+        assert len(set(names)) == 3, names
+
+    def test_pgdev_does_not_hardcode_the_role(self):
+        # pgdev.sh initdb's the cluster; a literal role there would build a
+        # cluster that scripts/db.sh, connecting as $PGUSER, cannot log into.
+        text = (REPO_ROOT / "scripts/pgdev.sh").read_text()
+        assert "-U energy" not in text
