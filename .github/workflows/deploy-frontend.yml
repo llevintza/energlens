@@ -20,6 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Runs before the build so base_path can feed Vite's `base`. Emits
+      # "/energlens" for a project site and "" behind a custom domain — append
+      # a slash and both become valid Vite base paths.
+      - uses: actions/configure-pages@v5
+        id: pages
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -29,15 +36,18 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_GH_PAGES: "1"
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
           # Set the API_URL repository variable to your hosted backend URL
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_OAUTH_PROVIDERS: ${{ vars.OAUTH_PROVIDERS }}
         run: |
+          test -n "$VITE_API_URL" || {
+            echo "::error::Repository variable API_URL is not set — the build would ship a bundle that points at localhost."
+            exit 1
+          }
           npm ci
           npm run build
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist

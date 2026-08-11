@@ -1,5 +1,8 @@
-export const API_URL: string =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
+// `||`, not `??`: an unset GitHub Actions variable expands to an empty string,
+// which `??` would happily keep and then blow up in `new URL('' + path)`.
+export const API_URL: string = (
+  import.meta.env.VITE_API_URL || 'http://localhost:8000'
+).replace(/\/+$/, '')
 
 const TOKEN_KEY = 'et_token'
 

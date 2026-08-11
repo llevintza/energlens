@@ -1,0 +1,38 @@
+# Render Blueprint for the API. Free tier: 512 MB, spins down after 15 min idle
+# (first request back takes 30-60s). Switch `plan` to `starter` for always-on.
+services:
+  - type: web
+    name: energlens-api
+    runtime: python
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: pip install uv && uv sync --frozen
+    startCommand: sh ./start.sh
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12"
+
+      # Neon connection string — set in the dashboard, never committed.
+      # Must be the DIRECT endpoint (not -pooler: pgbouncer transaction mode
+      # breaks asyncpg's prepared-statement cache), and must use the
+      # postgresql+asyncpg:// scheme with `?ssl=require` — `sslmode` is
+      # libpq-only and asyncpg rejects it.
+      - key: DATABASE_URL
+        sync: false
+
+      - key: JWT_SECRET
+        generateValue: true
+
+      # Origin only — no path, no trailing slash.
+      - key: CORS_ORIGINS
+        value: https://llevintza.github.io
+
+      # Full base URL including the project-site path (the OAuth redirect
+      # transport appends /auth/callback#access_token=... to it).
+      - key: FRONTEND_URL
+        value: https://llevintza.github.io/energlens
+
+      - key: SEED_DEMO
+        value: "true"

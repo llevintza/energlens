@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthContext'
 import { OAuthCallbackPage } from './auth/OAuthCallbackPage'
@@ -33,6 +33,9 @@ export default function App() {
                 <Route path="/places/:placeId" element={<PlaceDetailPage />} />
               </Route>
             </Route>
+            {/* GitHub Pages serves 404.html for unknown paths, so a mistyped
+                deep link lands here rather than 404ing at the CDN. */}
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>
