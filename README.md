@@ -19,7 +19,7 @@ Homebrew Postgres with a project-local data dir:
 
 ```sh
 brew install postgresql@16
-scripts/pgdev.sh init        # one-time: creates .pgdata + energlens DBs
+scripts/pgdev.sh init        # creates .pgdata + energlens DBs; safe to re-run
 scripts/pgdev.sh start       # later sessions
 ```
 
@@ -44,6 +44,33 @@ npm run dev
 Log in as `demo@example.com` / `demo1234` to see seeded charts, or register
 your own account.
 
+### Migrating a pre-rename setup
+
+The databases used to be called `energy_tracker` / `energy_tracker_test`. If
+you set the project up before the rename, the new defaults point at databases
+your cluster doesn't have yet, and `alembic upgrade head` fails with
+`InvalidCatalogNameError: database "energlens" does not exist`. Pick one:
+
+```sh
+# Keep your existing bills — rename the databases in place (no connections open)
+psql -h localhost -U energy -d postgres \
+  -c 'ALTER DATABASE energy_tracker RENAME TO energlens' \
+  -c 'ALTER DATABASE energy_tracker_test RENAME TO energlens_test'
+
+# Or start fresh — creates whatever is missing, leaves the old ones untouched
+scripts/pgdev.sh init
+```
+
+On Docker, `POSTGRES_DB` only takes effect when the volume is empty, so an
+existing `pgdata` volume needs the same `ALTER DATABASE` (run it inside the
+container with `docker compose exec db psql -U energy -d postgres -c ...`) or
+`docker compose down -v`, **which deletes the volume and every bill in it**.
+
+Also update the `DATABASE_URL` in your gitignored `.env` — it is read in
+preference to the new default in `backend/app/config.py`, so a stale copy
+silently keeps the app on the old database while the test suite uses the new
+one.
+
 ## Tests
 
 ```sh
@@ -57,14 +84,22 @@ cd frontend && npx tsc -b      # typecheck
 ```sh
 cd ingest && uv sync
 export ANTHROPIC_API_KEY=sk-ant-...
-export ET_EMAIL=you@example.com ET_PASSWORD=...
+export ENERGLENS_EMAIL=you@example.com ENERGLENS_PASSWORD=...
 
-# 1. Extract + review (no upload, results cached by file hash in extracted.jsonl)
-uv run energlens-ingest extract --dir ~/bills/main-residence --dry-run
+# 1. Extract + review (results cached by file hash in extracted.jsonl)
+uv run energlens-ingest extract --dir ~/bills/main-residence
 
-# 2. Upload to a place (get the place UUID from the UI or GET /places)
+# 2. Upload the reviewed cache to a place (UUID from the UI or GET /places)
+uv run energlens-ingest upload --cache extracted.jsonl --place-id <uuid>
+
+# ...or do both at once
 uv run energlens-ingest run --dir ~/bills/main-residence --place-id <uuid>
 ```
+
+`--dry-run` on `extract` previews what is already cached without calling
+Claude, so it never costs anything. The CLI reads `ENERGLENS_TOKEN` or
+`ENERGLENS_EMAIL`/`ENERGLENS_PASSWORD`, and `ENERGLENS_API_URL` (default
+`http://localhost:8000`); the older `ET_*` names still work.
 
 Re-runs skip already-uploaded periods (the API returns 409 for duplicates) and
 never re-pay extraction for unchanged files. Extraction uses Claude
