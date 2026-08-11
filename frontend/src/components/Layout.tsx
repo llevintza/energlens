@@ -7,7 +7,7 @@ export function Layout() {
   return (
     <>
       <nav className="topnav">
-        <span className="brand">⚡ Energy Tracker</span>
+        <span className="brand">⚡ Energlens</span>
         <NavLink
           to="/"
           end

@@ -40,7 +40,7 @@ export function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <h1>⚡ Energy Tracker</h1>
+        <h1>⚡ Energlens</h1>
         <p className="auth-sub">Sign in to your account</p>
         <form onSubmit={handleSubmit(onSubmit)}>
           <div className="field">
