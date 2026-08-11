@@ -20,6 +20,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # Runs before the build so base_path can feed Vite's `base`. Emits
+      # "/energlens" for a project site and "" behind a custom domain — append
+      # a slash and both become valid Vite base paths.
+      - uses: actions/configure-pages@v5
+        id: pages
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -29,15 +36,25 @@ jobs:
       - name: Build
         working-directory: frontend
         env:
-          VITE_GH_PAGES: "1"
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
           # Set the API_URL repository variable to your hosted backend URL
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_OAUTH_PROVIDERS: ${{ vars.OAUTH_PROVIDERS }}
         run: |
+          # Check the shape, not just emptiness: Render's dashboard shows the
+          # bare host, and a scheme-less value would sail through a `test -n`
+          # and then throw "Invalid URL" from new URL() on every request.
+          case "$VITE_API_URL" in
+            https://?*)
+              ;;
+            *)
+              echo "::error::Repository variable API_URL must be an absolute https:// URL (got: '${VITE_API_URL:-<empty>}')."
+              exit 1
+              ;;
+          esac
           npm ci
           npm run build
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist

@@ -11,7 +11,7 @@ from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi_users.password import PasswordHelper
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 
 from app.db import async_session_maker, engine
 from app.models import Base, Bill, Place, User
@@ -19,7 +19,18 @@ from app.models import Base, Bill, Place, User
 DEMO_EMAIL = "demo@example.com"
 DEMO_PASSWORD = "demo1234"
 MONTHS = 24
-LAST_MONTH = (2026, 7)  # newest seeded bill period
+
+
+def _last_month() -> tuple[int, int]:
+    """Newest seeded bill period — the month before the current one.
+
+    Derived rather than pinned: the dashboard's range filters are computed from
+    the current date, so a hardcoded window would silently drift out of view
+    (the 12-month filter first, then the 24-month default) on a long-lived
+    deployment that only ever seeds once.
+    """
+    today = date.today()
+    return (today.year - 1, 12) if today.month == 1 else (today.year, today.month - 1)
 
 
 def _money(value: float) -> Decimal:
@@ -27,7 +38,7 @@ def _money(value: float) -> Decimal:
 
 
 def _months_back(count: int) -> list[tuple[int, int]]:
-    year, month = LAST_MONTH
+    year, month = _last_month()
     out = []
     for _ in range(count):
         out.append((year, month))
@@ -83,13 +94,31 @@ def _make_bills(
     return bills
 
 
+async def _is_migration_managed(conn) -> bool:
+    return await conn.run_sync(
+        lambda sync_conn: inspect(sync_conn).has_table("alembic_version")
+    )
+
+
 async def seed() -> None:
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        # Only build the schema directly on a database Alembic has never touched
+        # (a fresh local dev DB). Where migrations own the schema, issuing DDL
+        # here would create tables behind Alembic's back — a model added before
+        # its migration would then make the next `upgrade head` fail with
+        # "already exists".
+        if await _is_migration_managed(conn):
+            print("alembic_version present — leaving schema to migrations")
+        else:
+            await conn.run_sync(Base.metadata.create_all)
 
     async with async_session_maker() as session:
+        # Select the id, not the entity: User carries a joined eager load for
+        # oauth_accounts, and scalar_one_or_none() on that raises
+        # InvalidRequestError ("the unique() method must be invoked") — which
+        # made every re-run of this supposedly idempotent seeder fail.
         existing = await session.execute(
-            select(User).where(User.email == DEMO_EMAIL)
+            select(User.id).where(User.email == DEMO_EMAIL)
         )
         if existing.scalar_one_or_none() is not None:
             print(f"{DEMO_EMAIL} already exists — nothing to do")

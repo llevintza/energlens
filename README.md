@@ -92,13 +92,46 @@ fragment.
 
 ## Deployment
 
-- **Frontend** — GitHub Pages via `.github/workflows/deploy-frontend.yml`.
-  Set repository variables `API_URL` (your hosted backend) and optionally
-  `OAUTH_PROVIDERS`. The build uses base path `/energy-tracker/` and copies
-  `index.html` → `404.html` for SPA deep links.
-- **Backend + DB, cheap tier** — Neon (free Postgres) + Render free web
-  service or a small Fly.io machine. Point `DATABASE_URL` at Neon, run
-  `alembic upgrade head`, add your Pages origin to `CORS_ORIGINS`.
+Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
+**$0/month**.
+
+- **Frontend — GitHub Pages** via `.github/workflows/deploy-frontend.yml`. Set
+  the repository variable `API_URL` to your hosted backend (the build *fails*
+  if it is unset, rather than shipping a bundle pointed at localhost), and
+  `OAUTH_PROVIDERS` only once the OAuth apps exist. The base path is read from
+  `actions/configure-pages` (`base_path` → `VITE_BASE`) rather than hardcoded,
+  so it picks up the repo name and becomes `/` behind a custom domain.
+  `postbuild` copies `index.html` → `404.html` for SPA deep links.
+
+  Both `API_URL` and the base path are resolved at **build** time, and the
+  workflow only triggers on pushes under `frontend/**`. Renaming the repo,
+  adding a custom domain, or changing `API_URL` therefore does not redeploy on
+  its own — the live bundle keeps the old values until you re-run the workflow
+  via `workflow_dispatch`.
+
+- **Backend — Render free web service** via `render.yaml` (Blueprint → point it
+  at this repo). Paste the Neon `DATABASE_URL` in the dashboard. `CORS_ORIGINS`
+  and `FRONTEND_URL` are pinned to this repo's Pages origin and do **not**
+  follow the frontend's base path — edit both if you fork, rename, or add a
+  domain, or the browser will block every API call. `backend/start.sh` runs
+  `alembic upgrade head` and, when `SEED_DEMO=true`, the demo seeder on each
+  boot — both idempotent. Free services sleep after 15 min idle, so the first
+  request back takes 30–60s; `plan: starter` ($7/mo) makes it always-on with no
+  other change.
+
+  Note that `SEED_DEMO=true` creates a shared account with credentials
+  committed to this repo, and the authenticated API allows writes — anyone who
+  finds the demo can modify its data, and re-seeding will not restore it.
+
+- **DB — Neon free Postgres** (0.5 GB, scale-to-zero). Two DSN gotchas: use the
+  **direct** endpoint, not `-pooler` (pgbouncer's transaction mode breaks
+  asyncpg's prepared-statement cache), and write `?ssl=require`, not
+  `?sslmode=require` (`sslmode` is libpq-only; asyncpg raises on it):
+
+  ```
+  postgresql+asyncpg://<user>:<pass>@ep-xxxx.eu-central-1.aws.neon.tech/energlens?ssl=require
+  ```
+
 - **Later, AWS** — `pg_dump | pg_restore` into RDS, swap `DATABASE_URL`,
   `alembic upgrade head`. Nothing else changes.
 

@@ -33,11 +33,17 @@ jobs:
       - name: Backend tests
         working-directory: backend
         run: |
-          uv sync
+          # --locked, not bare `uv sync`: the latter silently re-locks in the
+          # throwaway checkout, so a pyproject change without a regenerated
+          # uv.lock passes CI and then fails the deploy build.
+          uv sync --locked
           uv run pytest -q
 
       - name: Ingest tests
         working-directory: ingest
         run: |
-          uv sync
+          # --locked, not bare `uv sync`: the latter silently re-locks in the
+          # throwaway checkout, so a pyproject change without a regenerated
+          # uv.lock passes CI and then fails the deploy build.
+          uv sync --locked
           uv run pytest -q
