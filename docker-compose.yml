@@ -4,13 +4,24 @@ services:
     environment:
       POSTGRES_USER: energy
       POSTGRES_PASSWORD: energy
-      POSTGRES_DB: energlens
+      # POSTGRES_DB only seeds a database when the volume is empty. A volume
+      # created before the energlens rename still holds energy_tracker and
+      # will NOT gain this database — see "Migrating a pre-rename setup" in
+      # the README.
+      POSTGRES_DB: ${POSTGRES_DB:-energlens}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U energy -d energlens"]
+      # Not pg_isready: it answers for the postmaster and reports success even
+      # when the named database is missing, which is exactly the failure a
+      # pre-existing volume produces. A real connection catches it.
+      test:
+        [
+          "CMD-SHELL",
+          "psql -U energy -d ${POSTGRES_DB:-energlens} -c 'SELECT 1' >/dev/null 2>&1",
+        ]
       interval: 5s
       timeout: 3s
       retries: 10
