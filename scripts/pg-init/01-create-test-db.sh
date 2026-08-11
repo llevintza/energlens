@@ -13,9 +13,14 @@ set -eu
 
 TEST_DB="${PGDATABASE_TEST:-energlens_test}"
 
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<SQL
-SELECT 'CREATE DATABASE $TEST_DB'
- WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '$TEST_DB')\gexec
+# Bound as a psql variable, not interpolated by the shell: :'db' quotes it as a
+# literal for the lookup and format('%I') quotes it as an identifier for the
+# CREATE, so a name needing quotes (energlens-test) works and one containing a
+# quote cannot rewrite the statement.
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres \
+     -v db="$TEST_DB" <<'SQL'
+SELECT format('CREATE DATABASE %I', :'db')
+ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = :'db')\gexec
 SQL
 
 echo "created $TEST_DB"

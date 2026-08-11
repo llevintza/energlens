@@ -35,7 +35,7 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
 # "it passed"; a missing target at least fails loudly. fmt/lint/lint-py/lint-web
 # arrive with the linters that back them.
 .PHONY: help setup env db-up db-down db-ensure db-reset db-shell db-preflight \
-        migrate migration migrate-check seed dev-api dev-web \
+        migrate migration migrate-check lock-check seed dev-api dev-web \
         typecheck build-web \
         test test-backend test-ingest test-frontend \
         check ci-backend ci-frontend clean
@@ -142,11 +142,20 @@ test-frontend: typecheck ## The frontend has no test runner; typecheck is the ga
 # not a gate, and depends on production-only repository variables.
 check: ci-backend ci-frontend ## Run everything CI runs. The gate.
 
-# ci-frontend depends on test-frontend rather than relying on build-web to run
-# tsc first, so that adding a real frontend test runner to test-frontend lands
-# in `make check` automatically instead of silently escaping the gate.
+# CI installs with `uv sync --locked`, which refuses to re-lock; local `uv run`
+# re-locks silently, so without this a pyproject edit passes `make check` and
+# then fails the build. Checked rather than enforced, so editing pyproject.toml
+# locally still works — the failure names `uv lock` as the fix.
+lock-check: ## Assert both uv.lock files still match their pyproject.toml
+	$(UV) lock --check --directory $(ROOT)/backend
+	$(UV) lock --check --directory $(ROOT)/ingest
+
 # Same order as backend-ci.yml: the migration gate runs before the suites.
-ci-backend: migrate-check test-backend test-ingest
+ci-backend: lock-check migrate-check test-backend test-ingest
+
+# Depends on test-frontend rather than relying on build-web to run tsc first, so
+# that adding a real frontend test runner to test-frontend lands in `make check`
+# automatically instead of silently escaping the gate.
 ci-frontend: test-frontend build-web
 
 clean: ## Remove build output and caches
