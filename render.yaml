@@ -5,7 +5,11 @@ services:
     name: energlens-api
     runtime: python
     plan: free
-    region: frankfurt
+    # Must match the Neon project's region — the database is in AWS us-east-2.
+    # Splitting them across the Atlantic costs ~100ms per *query*, not per
+    # request, so a dashboard page issuing several sequential queries pays it
+    # several times over. Move both together or not at all.
+    region: ohio
     rootDir: backend
     # --locked, not --frozen: --frozen installs the committed lock without
     # checking it still matches pyproject.toml, turning lockfile drift into a

@@ -198,6 +198,73 @@ committed. Add this to `~/.config/muse/settings.json` yourself:
 Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
 **$0/month**.
 
+### First deploy, in order
+
+The pieces below are order-dependent — the frontend build bakes in a backend URL
+that does not exist yet, so doing this out of order ships a green build pointed
+at nothing.
+
+1. **Neon** — create a project, and **put it in the same region as
+   `render.yaml`'s `region:`** (currently AWS `us-east-2` / Render `ohio`). A
+   split costs ~100ms per *query*, not per request, so a dashboard page issuing
+   several sequential queries pays it several times over. On the connection-string
+   widget, turn **Connection pooling off** before copying, then rewrite the
+   string. Every one of these fails at runtime, not at paste time:
+
+   | Neon gives you | Rewrite to | Why |
+   | --- | --- | --- |
+   | `postgresql://` | `postgresql+asyncpg://` | SQLAlchemy driver selection |
+   | `ep-xxx-pooler.c-N.<region>…` | delete **only** `-pooler` | pgbouncer's transaction mode breaks asyncpg's prepared-statement cache |
+   | `?sslmode=require&channel_binding=require` | `?ssl=require` | both are libpq-only; asyncpg raises on them |
+
+   On the middle row: delete the `-pooler` suffix and **nothing else**. The `c-N`
+   segment looks like a region prefix but is part of the endpoint identity, and
+   Neon routes by SNI — strip it and the host still resolves, still accepts a TLS
+   connection, and then fails with `InvalidPasswordError`, which reads like a bad
+   credential rather than a bad hostname. The result:
+
+   ```
+   postgresql+asyncpg://<user>:<pass>@ep-xxx.c-N.us-east-2.aws.neon.tech/neondb?ssl=require
+   ```
+
+   Neon's default database is `neondb`; keeping that name is fine, nothing in the
+   deployed code requires `energlens`. A `%` in the generated password is safe —
+   `alembic/env.py` escapes it before ConfigParser sees it.
+
+2. **Render** — New → Blueprint → this repo, branch `main`. It reads `render.yaml`
+   and prompts for `DATABASE_URL`, the only variable marked `sync: false`; paste
+   the rewritten DSN. `JWT_SECRET` is generated for you. Watch the first deploy
+   log for `uv sync --locked` → `alembic upgrade head` → the seed → uvicorn.
+   `start.sh` runs under `set -e`, so a broken DSN aborts the boot *there*, with a
+   real error — that, not the health check, is what catches a bad connection
+   string.
+
+3. **Point the frontend at it.** Render assigns `<service-name>.onrender.com`, but
+   appends a suffix if the name is taken, so read the hostname off the service
+   page rather than assuming it. Because `*.onrender.com` is a wildcard, a wrong
+   guess returns a convincing 404 instead of failing to resolve. Both commands are
+   required — `API_URL` is inlined at build time, and the workflow's `frontend/**`
+   path filter means setting the variable triggers no deploy on its own:
+
+   ```sh
+   gh variable set API_URL --body https://<actual-host>
+   gh workflow run "Deploy frontend to GitHub Pages"
+   ```
+
+4. **Verify**, allowing 30–60s for the free tier's cold start:
+
+   ```sh
+   H=https://<actual-host>
+   curl -sS --max-time 90 "$H/health"     # {"status":"ok"} — the process is up
+   curl -sS --max-time 90 "$H/health/db"  # {"status":"ok","database":"ok"} — Neon is reachable
+   ```
+
+   A 404 with an `x-render-routing: no-server` header means no service claims that
+   hostname — you have the wrong one. Then register an account through the live UI
+   and add a place, which is what actually exercises CORS and JWT cross-origin.
+
+### How the pieces fit
+
 - **Frontend — GitHub Pages** via `.github/workflows/deploy-frontend.yml`. Set
   the repository variable `API_URL` to your hosted backend (the build *fails*
   if it is unset, rather than shipping a bundle pointed at localhost), and
@@ -226,14 +293,16 @@ Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
   committed to this repo, and the authenticated API allows writes — anyone who
   finds the demo can modify its data, and re-seeding will not restore it.
 
-- **DB — Neon free Postgres** (0.5 GB, scale-to-zero). Two DSN gotchas: use the
-  **direct** endpoint, not `-pooler` (pgbouncer's transaction mode breaks
-  asyncpg's prepared-statement cache), and write `?ssl=require`, not
-  `?sslmode=require` (`sslmode` is libpq-only; asyncpg raises on it):
+  Two health endpoints, deliberately split. `/health` is `healthCheckPath` and
+  stays a static `{"status":"ok"}`: the platform polls it, so a database
+  round-trip there would pay a Neon cold start on every probe and let a suspended
+  database read as a dead process. `/health/db` does the `SELECT 1` and answers
+  **503** when Postgres is unreachable — so a green health check plus a red
+  `/health/db` is precisely "the API is up, the database is not".
 
-  ```
-  postgresql+asyncpg://<user>:<pass>@ep-xxxx.eu-central-1.aws.neon.tech/energlens?ssl=require
-  ```
+- **DB — Neon free Postgres** (0.5 GB, scale-to-zero). The connection string
+  needs rewriting before it works with asyncpg, and its region has to match
+  `render.yaml`'s — see step 1 of the runbook above.
 
 - **Later, AWS** — `pg_dump | pg_restore` into RDS, swap `DATABASE_URL`,
   `alembic upgrade head`. Nothing else changes.
