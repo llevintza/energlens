@@ -30,6 +30,20 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Migrations apply and match the models
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://energy:energy@localhost:5432/energlens_test
+        run: |
+          # The suite builds its schema with Base.metadata.create_all, so
+          # without this step Alembic is never exercised and a model change
+          # with no matching revision merges green — then production, which
+          # boots via `alembic upgrade head` (start.sh), starts against a
+          # stale schema. `check` fails when models and revisions disagree.
+          uv sync --locked
+          uv run alembic upgrade head
+          uv run alembic check
+
       - name: Backend tests
         working-directory: backend
         run: |
