@@ -1,9 +1,44 @@
 import asyncio
 import os
+import subprocess
+from pathlib import Path
 
-os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://energy:energy@localhost:5432/energlens_test"
-)
+_REPO_ROOT = Path(__file__).resolve().parents[2]
+_DB_ENV = _REPO_ROOT / "scripts" / "db.env"
+_DB_SH = _REPO_ROOT / "scripts" / "db.sh"
+
+
+def _read_db_env() -> dict[str, str]:
+    """Parse scripts/db.env — the single source of truth for database identity.
+
+    Read rather than hardcoded so this suite cannot drift from pgdev.sh,
+    docker-compose and CI. backend/app/config.py keeps its own literal copy
+    because it ships without scripts/; test_config.py pins the two together.
+    """
+    values: dict[str, str] = {}
+    for line in _DB_ENV.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        values[key.strip()] = value.strip()
+    return values
+
+
+def _test_database_url() -> str:
+    if override := os.environ.get("ENERGLENS_TEST_DATABASE_URL"):
+        return override
+    env = _read_db_env()
+    return (
+        f"postgresql+asyncpg://{env['PGUSER']}:{env['PGPASSWORD']}"
+        f"@{env['PGHOST']}:{env['PGPORT']}/{env['PGDATABASE_TEST']}"
+    )
+
+
+# Set before importing app.*, which reads the environment at import time.
+# DATABASE_URL is overwritten unconditionally: whatever is exported points at
+# the development database, and every table in this one gets dropped.
+os.environ["DATABASE_URL"] = _test_database_url()
 os.environ["JWT_SECRET"] = "test-secret"
 
 import pytest
@@ -16,6 +51,23 @@ from app.main import app
 from app.models import Base
 
 TEST_DB_URL = os.environ["DATABASE_URL"]
+
+
+def pytest_configure(config):
+    """Fail with the fix rather than an asyncpg traceback.
+
+    scripts/db.sh owns these diagnostics, so `make test-backend` and a bare
+    `uv run pytest` — what an agent that ignores the Makefile will type — give
+    identical advice. Skipped when the URL was overridden, since the script
+    checks the database named in scripts/db.env.
+    """
+    if os.environ.get("ENERGLENS_TEST_DATABASE_URL") or not _DB_SH.exists():
+        return
+    result = subprocess.run(
+        [str(_DB_SH), "preflight", "test"], capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        pytest.exit(result.stderr.rstrip() or "database preflight failed", returncode=1)
 
 
 @pytest.fixture(scope="session", autouse=True)

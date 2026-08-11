@@ -14,32 +14,27 @@ provider doesn't give you.
 ## Quick start (local)
 
 Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+, and
-PostgreSQL — either Docker (`docker compose up -d`) or, without Docker,
-Homebrew Postgres with a project-local data dir:
+PostgreSQL — either Docker or, without Docker, Homebrew Postgres
+(`brew install postgresql@16`), which `make db-up` will set up in a
+project-local `.pgdata/` on first run.
 
 ```sh
-brew install postgresql@16
-scripts/pgdev.sh init        # creates .pgdata + energlens DBs; safe to re-run
-scripts/pgdev.sh start       # later sessions
+make setup       # .env from .env.example, uv sync, npm ci
+make db-up       # starts Postgres and creates both databases
+make migrate
+make seed        # demo@example.com / demo1234 with 2 years of data
 ```
 
-Then:
+Then, in two terminals:
 
 ```sh
-cp .env.example .env         # adjust JWT_SECRET at minimum
-
-# Backend (http://localhost:8000, docs at /docs)
-cd backend
-uv sync
-uv run alembic upgrade head
-uv run python -m app.seed    # demo@example.com / demo1234 with 2 years of data
-uv run uvicorn app.main:app --reload
-
-# Frontend (http://localhost:5173)
-cd ../frontend
-npm install
-npm run dev
+make dev-api     # http://localhost:8000, docs at /docs
+make dev-web     # http://localhost:5173
 ```
+
+`make help` lists every target. The underlying tools are still `uv`, `npm`,
+`alembic` and `scripts/pgdev.sh` — `make` just removes the need to know which
+one a given job uses, and which directory to be in.
 
 Log in as `demo@example.com` / `demo1234` to see seeded charts, or register
 your own account.
@@ -74,10 +69,21 @@ one.
 ## Tests
 
 ```sh
-cd backend && uv run pytest    # needs the energlens_test DB (pgdev init creates it)
-cd ingest  && uv run pytest
-cd frontend && npx tsc -b      # typecheck
+make check                     # everything CI runs — the gate before a PR
 ```
+
+Or one suite at a time:
+
+```sh
+make test-backend              # pytest; PYTEST_ARGS="-k currency" to narrow
+make test-ingest               # never calls a paid API
+make typecheck                 # the frontend has no test runner
+```
+
+`make test-backend` needs the `energlens_test` database. If it is missing, or
+Postgres is not running, or the databases still carry their pre-rename names,
+the preflight in `scripts/db.sh` says which of those it is and gives the exact
+command to fix it — `make db-up` and `make db-ensure` cover almost every case.
 
 ## Importing your real bills
 
