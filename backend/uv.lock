@@ -388,7 +388,7 @@ wheels = [
 ]
 
 [[package]]
-name = "energy-tracker-backend"
+name = "energlens-backend"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

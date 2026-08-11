@@ -19,9 +19,9 @@ case "${1:-}" in
     if [ -d "$PGDATA" ]; then echo ".pgdata already exists"; exit 0; fi
     "$PGBIN/initdb" -D "$PGDATA" -U energy --auth=trust --encoding=UTF8 >/dev/null
     "$PGBIN/pg_ctl" -D "$PGDATA" -l "$LOG" -o "-p $PGPORT" start >/dev/null
-    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U energy energy_tracker
-    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U energy energy_tracker_test
-    echo "initialized: energy_tracker + energy_tracker_test on port $PGPORT (user: energy)"
+    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U energy energlens
+    "$PGBIN/createdb" -h localhost -p "$PGPORT" -U energy energlens_test
+    echo "initialized: energlens + energlens_test on port $PGPORT (user: energy)"
     ;;
   start)
     "$PGBIN/pg_ctl" -D "$PGDATA" -l "$LOG" -o "-p $PGPORT" start
