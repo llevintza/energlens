@@ -1,0 +1,43 @@
+name: Backend CI
+
+# No paths filter: backend-tests is a required status check on main, and a
+# skipped workflow would leave the check stuck at "Expected", blocking merges.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: energy
+          POSTGRES_PASSWORD: energy
+          POSTGRES_DB: energy_tracker_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U energy"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - name: Backend tests
+        working-directory: backend
+        run: |
+          uv sync
+          uv run pytest -q
+
+      - name: Ingest tests
+        working-directory: ingest
+        run: |
+          uv sync
+          uv run pytest -q
