@@ -101,16 +101,30 @@ gitignored `.env`, and exports it. Because that happens at the shell level, ever
 harness launched from this directory inherits it identically.
 
 ```sh
+gh auth login                # or set GITHUB_MCP_PAT in .env — see below
 cp .env.example .env
 direnv allow                 # one-time, per clone
-gh auth login                # or set GITHUB_MCP_PAT in .env
 ```
 
+Authenticate before `direnv allow`. `.envrc` reads the `gh` keyring at the moment
+it evaluates, so logging in afterwards leaves the exported token empty until you
+run `direnv reload` or open a new shell. Editing `.env` reloads automatically,
+because direnv watches that file.
+
 If `GITHUB_MCP_PAT` ends up unset, `.envrc` says so on entering the directory,
-before any harness starts. Without `direnv`, run `set -a; . ./.env; set +a`
-first. A fine-grained PAT is minted at
-<https://github.com/settings/personal-access-tokens>; the `workflow` scope is
-needed to edit files under `.github/workflows/`.
+before any harness starts. Without `direnv`, reproduce both halves — sourcing
+`.env` on its own exports the blank placeholder and skips the keyring fallback:
+
+```sh
+set -a; . ./.env; set +a
+: "${GITHUB_MCP_PAT:=$(gh auth token 2>/dev/null)}"; export GITHUB_MCP_PAT
+```
+
+Tokens are minted at <https://github.com/settings/personal-access-tokens>. A
+fine-grained PAT needs **Contents: Read and write**, plus **Workflows: Read and
+write** to edit files under `.github/workflows/`. On a classic PAT those are the
+`repo` and `workflow` scopes — `workflow` is classic-only and is not offered in
+the fine-grained UI.
 
 | Harness | Committed config | Notes |
 | --- | --- | --- |
