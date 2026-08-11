@@ -1,4 +1,4 @@
-"""Thin client for the Energy Tracker API — always the API, never direct DB writes."""
+"""Thin client for the Energlens API — always the API, never direct DB writes."""
 
 import os
 
@@ -9,7 +9,7 @@ class ApiError(Exception):
     pass
 
 
-class EnergyTrackerClient:
+class EnerglensClient:
     def __init__(self, api_url: str, token: str | None = None):
         self.api_url = api_url.rstrip("/")
         self._client = httpx.Client(timeout=30)

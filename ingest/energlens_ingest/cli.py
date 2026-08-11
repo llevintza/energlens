@@ -1,8 +1,8 @@
-"""energy-ingest — extract bill data from PDFs and push it to the API.
+"""energlens-ingest — extract bill data from PDFs and push it to the API.
 
-    energy-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
-    energy-ingest upload  --cache extracted.jsonl --place-id <uuid>
-    energy-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
+    energlens-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
+    energlens-ingest upload  --cache extracted.jsonl --place-id <uuid>
+    energlens-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
 """
 
 from pathlib import Path
@@ -13,9 +13,9 @@ from anthropic import Anthropic
 from rich.console import Console
 from rich.table import Table
 
-from energy_ingest.api_client import EnergyTrackerClient
-from energy_ingest.claude_extractor import ExtractedBill, extract_directory
-from energy_ingest.models import to_api_payload, validate_bill
+from energlens_ingest.api_client import EnerglensClient
+from energlens_ingest.claude_extractor import ExtractedBill, extract_directory
+from energlens_ingest.models import to_api_payload, validate_bill
 
 app = typer.Typer(help=__doc__, add_completion=False)
 console = Console()
@@ -100,7 +100,7 @@ def run(
 
 
 def _upload(place_id: str, pdf_dir: Path, cache: Path, api_url: str) -> None:
-    api = EnergyTrackerClient(api_url)
+    api = EnerglensClient(api_url)
     place = api.get_place(place_id)
     console.print(
         f"Uploading to [bold]{place['name']}[/bold] ({place['currency_code']})"

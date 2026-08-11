@@ -89,7 +89,7 @@ wheels = [
 ]
 
 [[package]]
-name = "energy-ingest"
+name = "energlens-ingest"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

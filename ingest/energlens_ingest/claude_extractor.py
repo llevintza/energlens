@@ -13,7 +13,7 @@ from pathlib import Path
 
 from anthropic import Anthropic
 
-from energy_ingest.models import ExtractedBill
+from energlens_ingest.models import ExtractedBill
 
 MODEL = "claude-opus-5"
 
