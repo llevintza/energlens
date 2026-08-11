@@ -204,16 +204,28 @@ The pieces below are order-dependent — the frontend build bakes in a backend U
 that does not exist yet, so doing this out of order ships a green build pointed
 at nothing.
 
-1. **Neon** — create a project in AWS `eu-central-1` (Frankfurt), co-located with
-   `render.yaml`'s `region: frankfurt`. On the connection-string widget, turn
-   **Connection pooling off** before copying, then rewrite the string. Every one
-   of these fails at runtime, not at paste time:
+1. **Neon** — create a project, and **put it in the same region as
+   `render.yaml`'s `region:`** (currently AWS `us-east-2` / Render `ohio`). A
+   split costs ~100ms per *query*, not per request, so a dashboard page issuing
+   several sequential queries pays it several times over. On the connection-string
+   widget, turn **Connection pooling off** before copying, then rewrite the
+   string. Every one of these fails at runtime, not at paste time:
 
    | Neon gives you | Rewrite to | Why |
    | --- | --- | --- |
    | `postgresql://` | `postgresql+asyncpg://` | SQLAlchemy driver selection |
-   | `ep-xxxx-pooler.<region>…` | drop `-pooler` | pgbouncer's transaction mode breaks asyncpg's prepared-statement cache |
+   | `ep-xxx-pooler.c-N.<region>…` | delete **only** `-pooler` | pgbouncer's transaction mode breaks asyncpg's prepared-statement cache |
    | `?sslmode=require&channel_binding=require` | `?ssl=require` | both are libpq-only; asyncpg raises on them |
+
+   On the middle row: delete the `-pooler` suffix and **nothing else**. The `c-N`
+   segment looks like a region prefix but is part of the endpoint identity, and
+   Neon routes by SNI — strip it and the host still resolves, still accepts a TLS
+   connection, and then fails with `InvalidPasswordError`, which reads like a bad
+   credential rather than a bad hostname. The result:
+
+   ```
+   postgresql+asyncpg://<user>:<pass>@ep-xxx.c-N.us-east-2.aws.neon.tech/neondb?ssl=require
+   ```
 
    Neon's default database is `neondb`; keeping that name is fine, nothing in the
    deployed code requires `energlens`. A `%` in the generated password is safe —
@@ -289,12 +301,8 @@ at nothing.
   `/health/db` is precisely "the API is up, the database is not".
 
 - **DB — Neon free Postgres** (0.5 GB, scale-to-zero). The connection string
-  needs rewriting before it works with asyncpg — see step 1 of the runbook above.
-  The result looks like:
-
-  ```
-  postgresql+asyncpg://<user>:<pass>@ep-xxxx.eu-central-1.aws.neon.tech/neondb?ssl=require
-  ```
+  needs rewriting before it works with asyncpg, and its region has to match
+  `render.yaml`'s — see step 1 of the runbook above.
 
 - **Later, AWS** — `pg_dump | pg_restore` into RDS, swap `DATABASE_URL`,
   `alembic upgrade head`. Nothing else changes.
