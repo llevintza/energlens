@@ -1,8 +1,8 @@
-"""energy-ingest — extract bill data from PDFs and push it to the API.
+"""energlens-ingest — extract bill data from PDFs and push it to the API.
 
-    energy-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
-    energy-ingest upload  --cache extracted.jsonl --place-id <uuid>
-    energy-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
+    energlens-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
+    energlens-ingest upload  --cache extracted.jsonl --place-id <uuid>
+    energlens-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
 """
 
 from pathlib import Path
@@ -13,9 +13,13 @@ from anthropic import Anthropic
 from rich.console import Console
 from rich.table import Table
 
-from energy_ingest.api_client import EnergyTrackerClient
-from energy_ingest.claude_extractor import ExtractedBill, extract_directory
-from energy_ingest.models import to_api_payload, validate_bill
+from energlens_ingest.api_client import EnerglensClient
+from energlens_ingest.claude_extractor import (
+    ExtractedBill,
+    extract_directory,
+    load_cached_bills,
+)
+from energlens_ingest.models import to_api_payload, validate_bill
 
 app = typer.Typer(help=__doc__, add_completion=False)
 console = Console()
@@ -25,7 +29,9 @@ CacheOpt = Annotated[
     Path, typer.Option("--cache", help="JSONL extraction cache file")
 ]
 PlaceOpt = Annotated[str, typer.Option("--place-id", help="Target place UUID")]
-ApiOpt = Annotated[str, typer.Option("--api-url", envvar="ET_API_URL")]
+ApiOpt = Annotated[
+    str, typer.Option("--api-url", envvar=["ENERGLENS_API_URL", "ET_API_URL"])
+]
 
 
 def _render_table(rows: list[tuple[str, ExtractedBill, list]]) -> None:
@@ -49,16 +55,43 @@ def _render_table(rows: list[tuple[str, ExtractedBill, list]]) -> None:
     console.print(table)
 
 
-def _extract(pdf_dir: Path, cache: Path, expected_currency: str | None):
-    client = Anthropic()
-    results = extract_directory(client, pdf_dir, cache)
-    if not results:
-        console.print(f"[yellow]No PDFs found in {pdf_dir}[/yellow]")
-        raise typer.Exit(1)
+def _validated(
+    results: list[tuple[Path, ExtractedBill]], expected_currency: str | None
+) -> list[tuple[str, ExtractedBill, list]]:
     return [
         (path.name, bill, validate_bill(bill, expected_currency))
         for path, bill in results
     ]
+
+
+def _extract(
+    pdf_dir: Path, cache: Path, expected_currency: str | None, dry_run: bool = False
+):
+    # dry_run passes no client, so uncached PDFs are reported rather than sent
+    # to Claude — the flag must never bill an API call or write the cache.
+    client = None if dry_run else Anthropic()
+    results, skipped = extract_directory(client, pdf_dir, cache)
+    if not results and not skipped:
+        console.print(f"[yellow]No PDFs found in {pdf_dir}[/yellow]")
+        raise typer.Exit(1)
+    if skipped:
+        console.print(
+            f"[yellow]{len(skipped)} PDF(s) not in the cache and not extracted "
+            f"(--dry-run makes no API calls): {', '.join(p.name for p in skipped)}"
+            "[/yellow]"
+        )
+    return _validated(results, expected_currency)
+
+
+def _from_cache(cache: Path, expected_currency: str | None):
+    if not cache.exists():
+        console.print(f"[red]No cache file at {cache} — run `extract` first.[/red]")
+        raise typer.Exit(1)
+    results = load_cached_bills(cache)
+    if not results:
+        console.print(f"[yellow]Cache {cache} is empty[/yellow]")
+        raise typer.Exit(1)
+    return _validated(results, expected_currency)
 
 
 @app.command()
@@ -68,10 +101,14 @@ def extract(
     currency: Annotated[
         str | None, typer.Option(help="Expected currency (hard error on mismatch)")
     ] = None,
-    dry_run: bool = typer.Option(False, "--dry-run", help="Only print the table"),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        help="Preview cached extractions only — no API calls, no cache writes",
+    ),
 ) -> None:
     """Extract all PDFs in a directory into the cache file."""
-    rows = _extract(dir, cache, currency)
+    rows = _extract(dir, cache, currency, dry_run=dry_run)
     _render_table(rows)
     if not dry_run:
         console.print(f"Cached to [bold]{cache}[/bold] — review, then run `upload`.")
@@ -81,11 +118,10 @@ def extract(
 def upload(
     place_id: PlaceOpt,
     cache: CacheOpt = Path("extracted.jsonl"),
-    dir: DirOpt = Path("."),
     api_url: ApiOpt = "http://localhost:8000",
 ) -> None:
     """Upload previously extracted bills to the API (409 duplicates are skipped)."""
-    _upload(place_id, dir, cache, api_url)
+    _upload(place_id, api_url, lambda currency: _from_cache(cache, currency))
 
 
 @app.command()
@@ -96,17 +132,18 @@ def run(
     api_url: ApiOpt = "http://localhost:8000",
 ) -> None:
     """Extract and upload in one go."""
-    _upload(place_id, dir, cache, api_url)
+    _upload(place_id, api_url, lambda currency: _extract(dir, cache, currency))
 
 
-def _upload(place_id: str, pdf_dir: Path, cache: Path, api_url: str) -> None:
-    api = EnergyTrackerClient(api_url)
+def _upload(place_id: str, api_url: str, build_rows) -> None:
+    api = EnerglensClient(api_url)
     place = api.get_place(place_id)
     console.print(
         f"Uploading to [bold]{place['name']}[/bold] ({place['currency_code']})"
     )
 
-    rows = _extract(pdf_dir, cache, expected_currency=place["currency_code"])
+    # Rows are built after the place is known so the currency can be validated.
+    rows = build_rows(place["currency_code"])
     _render_table(rows)
 
     errored = [name for name, _, issues in rows if any(i.level == "error" for i in issues)]

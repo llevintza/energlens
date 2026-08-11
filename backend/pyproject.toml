@@ -1,7 +1,7 @@
 [project]
-name = "energy-tracker-backend"
+name = "energlens-backend"
 version = "0.1.0"
-description = "Energy bill tracker API"
+description = "Energlens API — energy bill tracking"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115",

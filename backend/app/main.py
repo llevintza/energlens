@@ -11,7 +11,7 @@ from app.routers.places import router as places_router
 from app.routers.series import router as series_router
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 
-app = FastAPI(title="Energy Tracker API")
+app = FastAPI(title="Energlens API")
 
 app.add_middleware(
     CORSMiddleware,

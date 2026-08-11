@@ -6,7 +6,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 class Settings(BaseSettings):
-    database_url: str = "postgresql+asyncpg://energy:energy@localhost:5432/energy_tracker"
+    database_url: str = "postgresql+asyncpg://energy:energy@localhost:5432/energlens"
 
     jwt_secret: str = "change-me-to-a-long-random-string"
     jwt_lifetime_seconds: int = 60 * 60 * 24 * 7

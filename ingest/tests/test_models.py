@@ -1,7 +1,7 @@
 from datetime import date
 from decimal import Decimal
 
-from energy_ingest.models import ExtractedBill, to_api_payload, validate_bill
+from energlens_ingest.models import ExtractedBill, to_api_payload, validate_bill
 
 
 def make_bill(**overrides) -> ExtractedBill:

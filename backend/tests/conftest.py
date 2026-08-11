@@ -2,7 +2,7 @@ import asyncio
 import os
 
 os.environ["DATABASE_URL"] = (
-    "postgresql+asyncpg://energy:energy@localhost:5432/energy_tracker_test"
+    "postgresql+asyncpg://energy:energy@localhost:5432/energlens_test"
 )
 os.environ["JWT_SECRET"] = "test-secret"
 
