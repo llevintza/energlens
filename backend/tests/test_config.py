@@ -55,7 +55,18 @@ class TestDatabaseIdentity:
         text = (REPO_ROOT / ".github/workflows/backend-ci.yml").read_text()
         assert f"POSTGRES_USER: {env['PGUSER']}" in text
         assert f"POSTGRES_PASSWORD: {env['PGPASSWORD']}" in text
-        assert f"/{env['PGDATABASE_TEST']}" in text
+        # The service block, not just the DSN in the migrations step: changing
+        # one and not the other is exactly the drift worth catching.
+        assert f"POSTGRES_DB: {env['PGDATABASE_TEST']}" in text
+        assert expected_dsn(env["PGDATABASE_TEST"]) in text
+
+    def test_shell_scripts_source_db_env_rather_than_redefining_it(self):
+        # scripts/pgdev.sh is invoked directly by README's rename-migration
+        # instructions, so its database names must come from the same file the
+        # make targets use, not from its own defaults.
+        for name in ("db.sh", "pgdev.sh"):
+            text = (REPO_ROOT / "scripts" / name).read_text()
+            assert 'scripts/db.env"' in text, f"{name} does not source scripts/db.env"
 
     def test_test_database_is_not_the_app_database(self):
         # The suite drops every table in PGDATABASE_TEST on each run.

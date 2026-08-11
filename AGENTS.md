@@ -93,10 +93,13 @@ gate, and it depends on production-only repository variables.
 
 - Python is managed with `uv` in `backend/` and `ingest/`; the `make` targets
   wrap it. Node is pinned by CI at 22.
-- Database identity — user, port, both database names — lives in
-  `scripts/db.env` and nowhere else. `backend/app/config.py` and the CI service
-  block keep literal copies because they cannot read that file when they need
-  it; `backend/tests/test_config.py` fails if the copies drift.
+- Database identity — user, port, both database names — is defined in
+  `scripts/db.env`. `scripts/db.sh` and `scripts/pgdev.sh` source it; the
+  environment overrides it, so `PGPORT=5433 make db-up` works. Four consumers
+  cannot read it when they need it and so keep literal copies —
+  `backend/app/config.py`, the CI service block, `docker-compose.yml` and
+  `.env.example`. **`backend/tests/test_config.py` fails if any copy drifts**,
+  so change `db.env` and let the test tell you what else to update.
 - The test suite drops every table in `energlens_test` on each run. That is why
   the preflight refuses to run when `DATABASE_URL` points off localhost.
 - Never commit `.env`, tokens, credentials, real bill PDFs, or

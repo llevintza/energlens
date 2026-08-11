@@ -10,12 +10,14 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PGDATA="$ROOT/.pgdata"
-PGPORT="${PGPORT:-5432}"
 LOG="$ROOT/.pglog"
 
-# The database names live here only; everything else derives from them.
-DB_MAIN="${PGDATABASE:-energlens}"
-DB_TEST="${PGDATABASE_TEST:-${DB_MAIN}_test}"
+# Port and database names come from the one file that defines them, so running
+# this script directly — as README's "Migrating a pre-rename setup" does — cannot
+# create differently named databases from the ones `make` expects.
+. "$ROOT/scripts/db.env"
+DB_MAIN="$PGDATABASE"
+DB_TEST="$PGDATABASE_TEST"
 
 if [ -z "${PGBIN:-}" ]; then
   if ! brew_prefix="$(brew --prefix postgresql@16 2>/dev/null)"; then

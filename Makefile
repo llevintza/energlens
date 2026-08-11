@@ -43,12 +43,15 @@ help: ## Show this help
 ## -- setup ------------------------------------------------------------------
 
 setup: env $(NODE_STAMP) ## Install every dependency and create .env if missing
-	$(BACKEND) python -c "print('backend deps ready')"
-	$(INGEST) python -c "print('ingest deps ready')"
+	$(UV) sync --directory $(ROOT)/backend
+	$(UV) sync --directory $(ROOT)/ingest
 
+# Both lines must succeed whatever state .env is in: this is the first thing a
+# new clone runs, and `test -s` on a zero-byte .env would abort `make setup`.
 env: ## Create .env from .env.example if it does not exist yet
-	@test -f $(ROOT)/.env || cp $(ROOT)/.env.example $(ROOT)/.env
-	@test -s $(ROOT)/.env && echo ".env present — fill in JWT_SECRET before deploying"
+	@test -f $(ROOT)/.env || { cp $(ROOT)/.env.example $(ROOT)/.env; \
+	  echo "created .env from .env.example"; }
+	@test -s $(ROOT)/.env || echo "warning: .env is empty — copy .env.example into it"
 
 $(NODE_STAMP): $(ROOT)/frontend/package-lock.json
 	$(WEB) npm ci
@@ -126,8 +129,11 @@ test-frontend: typecheck ## The frontend has no test runner; typecheck is the ga
 # not a gate, and depends on production-only repository variables.
 check: ci-backend ci-frontend ## Run everything CI runs. The gate.
 
+# ci-frontend depends on test-frontend rather than relying on build-web to run
+# tsc first, so that adding a real frontend test runner to test-frontend lands
+# in `make check` automatically instead of silently escaping the gate.
 ci-backend: test-backend test-ingest
-ci-frontend: build-web
+ci-frontend: test-frontend build-web
 
 clean: ## Remove build output and caches
 	rm -rf $(ROOT)/frontend/dist $(ROOT)/frontend/node_modules/.tmp

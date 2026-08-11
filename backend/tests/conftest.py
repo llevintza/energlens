@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -9,19 +10,18 @@ _DB_SH = _REPO_ROOT / "scripts" / "db.sh"
 
 
 def _read_db_env() -> dict[str, str]:
-    """Parse scripts/db.env — the single source of truth for database identity.
+    """Read the defaults out of scripts/db.env, the single source of truth.
 
-    Read rather than hardcoded so this suite cannot drift from pgdev.sh,
-    docker-compose and CI. backend/app/config.py keeps its own literal copy
-    because it ships without scripts/; test_config.py pins the two together.
+    That file is a sourceable shell fragment of `: "${NAME:=value}"` lines, so
+    the environment can override it and both shell scripts load it with one `.`
+    line. Only the defaults are wanted here — an exported PGDATABASE aimed at
+    the development database must not redirect a suite that drops every table.
     """
+    pattern = re.compile(r'^:\s*"\$\{(\w+):=([^}]*)\}"')
     values: dict[str, str] = {}
     for line in _DB_ENV.read_text().splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, _, value = line.partition("=")
-        values[key.strip()] = value.strip()
+        if match := pattern.match(line.strip()):
+            values[match.group(1)] = match.group(2)
     return values
 
 

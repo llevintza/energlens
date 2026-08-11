@@ -16,14 +16,10 @@ set -eu
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
-# db.env holds the defaults; `:=` means anything already in the environment
-# wins, so `PGPORT=5433 make db-up` works and CI can aim at its own service.
-# Exported because libpq reads these directly — that is what lets the rest of
-# this script call bare psql/createdb/pg_isready with no connection flags.
-while IFS='=' read -r key value; do
-  case "$key" in '' | \#*) continue ;; esac
-  eval ": \"\${$key:=$value}\"" && eval "export $key"
-done < "$ROOT/scripts/db.env"
+# Defines and exports PGUSER/PGPASSWORD/PGHOST/PGPORT/PGDATABASE/PGDATABASE_TEST,
+# letting everything below call bare psql/createdb/pg_isready. The environment
+# wins over the file, so `PGPORT=5433 make db-up` works.
+. "$ROOT/scripts/db.env"
 
 # Names used before the energlens rename. Kept only so the preflight can
 # recognise a pre-rename clone and say so, instead of reporting a bare
@@ -83,7 +79,10 @@ cmd_up() {
     "$ROOT/scripts/pgdev.sh" start >/dev/null 2>&1 || true
   elif have docker && [ -f "$ROOT/docker-compose.yml" ]; then
     say "No .pgdata directory — starting the docker-compose 'db' service."
-    docker compose --env-file "$ROOT/scripts/db.env" up -d
+    # POSTGRES_DB explicitly, not --env-file: compose names this variable
+    # POSTGRES_DB while db.env calls it PGDATABASE, so an env-file would leave
+    # it unset and silently fall back to the literal in docker-compose.yml.
+    POSTGRES_DB="$PGDATABASE" docker compose up -d
   else
     say "First run on this machine — initialising a project-local cluster in .pgdata/"
     "$ROOT/scripts/pgdev.sh" init
