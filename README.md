@@ -90,6 +90,54 @@ navigation, so the CSRF cookie is first-party), and the callback 302s back to
 `{FRONTEND_URL}/auth/callback#access_token=...` with the token in the URL
 fragment.
 
+## GitHub MCP server (agent harnesses)
+
+The `github` MCP server is configured at **project scope and committed**, so any
+contributor gets it on clone. It authenticates with your own GitHub token, read
+from `GITHUB_MCP_PAT` — no secret is in the repo, only the variable name.
+
+The bridge is `direnv`: `.envrc` is committed and secret-free, loads your
+gitignored `.env`, and exports it. Because that happens at the shell level, every
+harness launched from this directory inherits it identically.
+
+```sh
+cp .env.example .env
+direnv allow                 # one-time, per clone
+gh auth login                # or set GITHUB_MCP_PAT in .env
+```
+
+If `GITHUB_MCP_PAT` ends up unset, `.envrc` says so on entering the directory,
+before any harness starts. Without `direnv`, run `set -a; . ./.env; set +a`
+first. A fine-grained PAT is minted at
+<https://github.com/settings/personal-access-tokens>; the `workflow` scope is
+needed to edit files under `.github/workflows/`.
+
+| Harness | Committed config | Notes |
+| --- | --- | --- |
+| Claude Code | `.mcp.json` | approve once when prompted |
+| Copilot CLI | `.mcp.json` | |
+| Cursor | `.cursor/mcp.json` | uses `${env:VAR}`, not `${VAR}` |
+| Gemini CLI | `.gemini/settings.json` | |
+| Codex | `.codex/config.toml` | project must be trusted |
+
+**Muse Code** resolves settings only from the user-level file, so it can't be
+committed. Add this to `~/.config/muse/settings.json` yourself:
+
+```json
+{
+  "schema_version": 1,
+  "mcp_servers": {
+    "github": {
+      "transport": "streamable_http",
+      "url": "https://api.githubcopilot.com/mcp/",
+      "headers": { "Authorization": "Bearer YOUR_TOKEN" }
+    }
+  }
+}
+```
+
+`schema_version` is required — Muse fails to start without it.
+
 ## Deployment
 
 Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:

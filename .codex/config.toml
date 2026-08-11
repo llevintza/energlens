@@ -1,0 +1,9 @@
+# Project-scoped Codex config. Read only for trusted projects — run
+# `codex` here once and accept the trust prompt, or add this directory under
+# [projects] in ~/.codex/config.toml with trust_level = "trusted".
+#
+# No secret here: bearer_token_env_var names the variable, and .envrc exports it.
+
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/"
+bearer_token_env_var = "GITHUB_MCP_PAT"
