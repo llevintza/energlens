@@ -1,0 +1,21 @@
+// Common ISO 4217 codes for the place form select.
+export const CURRENCIES = [
+  'EUR',
+  'RON',
+  'USD',
+  'GBP',
+  'CHF',
+  'SEK',
+  'NOK',
+  'DKK',
+  'PLN',
+  'CZK',
+  'HUF',
+  'BGN',
+  'MDL',
+  'UAH',
+  'TRY',
+  'CAD',
+  'AUD',
+  'JPY',
+] as const
