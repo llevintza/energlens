@@ -1,4 +1,4 @@
-# ⚡ Energy Tracker
+# ⚡ Energlens
 
 Track the evolution of electricity bills across your properties — consumption
 (kWh), cost, and effective price per kWh over time, with charts your utility
@@ -19,7 +19,7 @@ Homebrew Postgres with a project-local data dir:
 
 ```sh
 brew install postgresql@16
-scripts/pgdev.sh init        # one-time: creates .pgdata + energy_tracker DBs
+scripts/pgdev.sh init        # one-time: creates .pgdata + energlens DBs
 scripts/pgdev.sh start       # later sessions
 ```
 
@@ -47,7 +47,7 @@ your own account.
 ## Tests
 
 ```sh
-cd backend && uv run pytest    # needs the energy_tracker_test DB (pgdev init creates it)
+cd backend && uv run pytest    # needs the energlens_test DB (pgdev init creates it)
 cd ingest  && uv run pytest
 cd frontend && npx tsc -b      # typecheck
 ```
@@ -60,10 +60,10 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export ET_EMAIL=you@example.com ET_PASSWORD=...
 
 # 1. Extract + review (no upload, results cached by file hash in extracted.jsonl)
-uv run energy-ingest extract --dir ~/bills/main-residence --dry-run
+uv run energlens-ingest extract --dir ~/bills/main-residence --dry-run
 
 # 2. Upload to a place (get the place UUID from the UI or GET /places)
-uv run energy-ingest run --dir ~/bills/main-residence --place-id <uuid>
+uv run energlens-ingest run --dir ~/bills/main-residence --place-id <uuid>
 ```
 
 Re-runs skip already-uploaded periods (the API returns 409 for duplicates) and
@@ -202,7 +202,7 @@ Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
 ```
 backend/    FastAPI app (app/), Alembic migrations, pytest suite
 frontend/   Vite + React SPA (src/api, src/auth, src/pages, src/components)
-ingest/     energy-ingest CLI (Claude PDF extraction → API upload)
+ingest/     energlens-ingest CLI (Claude PDF extraction → API upload)
 scripts/    pgdev.sh — local Postgres without Docker
 ```
 
