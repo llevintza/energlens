@@ -1,0 +1,65 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from app.auth.backend import auth_backend, oauth_redirect_backend
+from app.auth.oauth import github_oauth_client, google_oauth_client
+from app.auth.users import fastapi_users
+from app.config import settings
+from app.routers.bills import router as bills_router
+from app.routers.oauth_login import router as oauth_login_router
+from app.routers.places import router as places_router
+from app.routers.series import router as series_router
+from app.schemas.user import UserCreate, UserRead, UserUpdate
+
+app = FastAPI(title="Energy Tracker API")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins_list,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(
+    fastapi_users.get_auth_router(auth_backend), prefix="/auth/jwt", tags=["auth"]
+)
+app.include_router(
+    fastapi_users.get_register_router(UserRead, UserCreate),
+    prefix="/auth",
+    tags=["auth"],
+)
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/users",
+    tags=["users"],
+)
+
+for _client, _prefix in (
+    (google_oauth_client, "/auth/google"),
+    (github_oauth_client, "/auth/github"),
+):
+    if _client is not None:
+        app.include_router(
+            fastapi_users.get_oauth_router(
+                _client,
+                oauth_redirect_backend,
+                settings.jwt_secret,
+                associate_by_email=True,
+                is_verified_by_default=True,
+                csrf_token_cookie_secure=settings.oauth_cookie_secure,
+            ),
+            prefix=_prefix,
+            tags=["auth"],
+        )
+
+if google_oauth_client is not None or github_oauth_client is not None:
+    app.include_router(oauth_login_router)
+
+app.include_router(places_router)
+app.include_router(bills_router)
+app.include_router(series_router)
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
