@@ -98,20 +98,30 @@ Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
 - **Frontend — GitHub Pages** via `.github/workflows/deploy-frontend.yml`. Set
   the repository variable `API_URL` to your hosted backend (the build *fails*
   if it is unset, rather than shipping a bundle pointed at localhost), and
-  `OAUTH_PROVIDERS` only once the OAuth apps exist. The base path comes from
-  `actions/configure-pages` (`base_path` → `VITE_BASE`), so it tracks the repo
-  name automatically and becomes `/` if you add a custom domain. `postbuild`
-  copies `index.html` → `404.html` for SPA deep links.
+  `OAUTH_PROVIDERS` only once the OAuth apps exist. The base path is read from
+  `actions/configure-pages` (`base_path` → `VITE_BASE`) rather than hardcoded,
+  so it picks up the repo name and becomes `/` behind a custom domain.
+  `postbuild` copies `index.html` → `404.html` for SPA deep links.
 
-  `API_URL` is inlined at build time, so changing the variable does not
-  redeploy on its own — re-run the workflow via `workflow_dispatch`.
+  Both `API_URL` and the base path are resolved at **build** time, and the
+  workflow only triggers on pushes under `frontend/**`. Renaming the repo,
+  adding a custom domain, or changing `API_URL` therefore does not redeploy on
+  its own — the live bundle keeps the old values until you re-run the workflow
+  via `workflow_dispatch`.
 
 - **Backend — Render free web service** via `render.yaml` (Blueprint → point it
-  at this repo). Paste the Neon `DATABASE_URL` in the dashboard; everything
-  else is in the blueprint. `backend/start.sh` runs `alembic upgrade head` and,
-  when `SEED_DEMO=true`, the demo seeder on each boot — both idempotent. Free
-  services sleep after 15 min idle, so the first request back takes 30–60s;
-  `plan: starter` ($7/mo) makes it always-on with no other change.
+  at this repo). Paste the Neon `DATABASE_URL` in the dashboard. `CORS_ORIGINS`
+  and `FRONTEND_URL` are pinned to this repo's Pages origin and do **not**
+  follow the frontend's base path — edit both if you fork, rename, or add a
+  domain, or the browser will block every API call. `backend/start.sh` runs
+  `alembic upgrade head` and, when `SEED_DEMO=true`, the demo seeder on each
+  boot — both idempotent. Free services sleep after 15 min idle, so the first
+  request back takes 30–60s; `plan: starter` ($7/mo) makes it always-on with no
+  other change.
+
+  Note that `SEED_DEMO=true` creates a shared account with credentials
+  committed to this repo, and the authenticated API allows writes — anyone who
+  finds the demo can modify its data, and re-seeding will not restore it.
 
 - **DB — Neon free Postgres** (0.5 GB, scale-to-zero). Two DSN gotchas: use the
   **direct** endpoint, not `-pooler` (pgbouncer's transaction mode breaks

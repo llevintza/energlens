@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 import { AuthProvider } from './auth/AuthContext'
 import { OAuthCallbackPage } from './auth/OAuthCallbackPage'
@@ -7,6 +7,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { Layout } from './components/Layout'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceDetailPage } from './pages/PlaceDetailPage'
 import { PlacesPage } from './pages/PlacesPage'
 import { RegisterPage } from './pages/RegisterPage'
@@ -34,8 +35,11 @@ export default function App() {
               </Route>
             </Route>
             {/* GitHub Pages serves 404.html for unknown paths, so a mistyped
-                deep link lands here rather than 404ing at the CDN. */}
-            <Route path="*" element={<Navigate to="/" replace />} />
+                deep link lands here rather than 404ing at the CDN. Render a
+                page instead of redirecting: a redirect would erase the bad URL
+                from the address bar and the back stack, leaving the visitor on
+                the dashboard with no idea the link was wrong. */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </AuthProvider>
       </BrowserRouter>

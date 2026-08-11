@@ -41,10 +41,17 @@ jobs:
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_OAUTH_PROVIDERS: ${{ vars.OAUTH_PROVIDERS }}
         run: |
-          test -n "$VITE_API_URL" || {
-            echo "::error::Repository variable API_URL is not set — the build would ship a bundle that points at localhost."
-            exit 1
-          }
+          # Check the shape, not just emptiness: Render's dashboard shows the
+          # bare host, and a scheme-less value would sail through a `test -n`
+          # and then throw "Invalid URL" from new URL() on every request.
+          case "$VITE_API_URL" in
+            https://?*)
+              ;;
+            *)
+              echo "::error::Repository variable API_URL must be an absolute https:// URL (got: '${VITE_API_URL:-<empty>}')."
+              exit 1
+              ;;
+          esac
           npm ci
           npm run build
 

@@ -7,7 +7,10 @@ services:
     plan: free
     region: frankfurt
     rootDir: backend
-    buildCommand: pip install uv && uv sync --frozen
+    # --locked, not --frozen: --frozen installs the committed lock without
+    # checking it still matches pyproject.toml, turning lockfile drift into a
+    # ModuleNotFoundError crash-loop at boot instead of a build-time error.
+    buildCommand: pip install uv && uv sync --locked
     startCommand: sh ./start.sh
     healthCheckPath: /health
     envVars:
@@ -24,6 +27,12 @@ services:
 
       - key: JWT_SECRET
         generateValue: true
+
+      # The next two are pinned to THIS repo's Pages origin. They do not track
+      # the frontend's base path (which is resolved from the Pages API at build
+      # time), so change both by hand if you fork, rename the repo, or add a
+      # custom domain — otherwise every XHR is blocked by CORS and the OAuth
+      # callback redirects to the wrong site.
 
       # Origin only — no path, no trailing slash.
       - key: CORS_ORIGINS
