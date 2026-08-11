@@ -96,16 +96,24 @@ def extract_bill(client: Anthropic, pdf_path: Path) -> ExtractedBill:
 
 
 def extract_directory(
-    client: Anthropic, pdf_dir: Path, cache_path: Path
-) -> list[tuple[Path, ExtractedBill]]:
-    """Extract every PDF in a directory, reusing cached results by file hash."""
+    client: Anthropic | None, pdf_dir: Path, cache_path: Path
+) -> tuple[list[tuple[Path, ExtractedBill]], list[Path]]:
+    """Extract every PDF in a directory, reusing cached results by file hash.
+
+    Returns the extracted bills and the PDFs that were skipped because they
+    are uncached and `client` is None (the no-API preview path).
+    """
     cache = load_cache(cache_path)
     results: list[tuple[Path, ExtractedBill]] = []
+    skipped: list[Path] = []
 
     for pdf_path in sorted(pdf_dir.glob("*.pdf")):
         digest = file_sha256(pdf_path)
         if digest in cache:
             bill = ExtractedBill.model_validate(cache[digest]["bill"])
+        elif client is None:
+            skipped.append(pdf_path)
+            continue
         else:
             bill = extract_bill(client, pdf_path)
             append_cache(
@@ -117,4 +125,12 @@ def extract_directory(
                 },
             )
         results.append((pdf_path, bill))
-    return results
+    return results, skipped
+
+
+def load_cached_bills(cache_path: Path) -> list[tuple[Path, ExtractedBill]]:
+    """Every bill in the cache file, without touching the PDFs or the API."""
+    return [
+        (Path(entry.get("file", entry["sha256"][:12])), ExtractedBill.model_validate(entry["bill"]))
+        for entry in load_cache(cache_path).values()
+    ]
