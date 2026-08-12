@@ -198,6 +198,11 @@ committed. Add this to `~/.config/muse/settings.json` yourself:
 Live at <https://llevintza.github.io/energlens/>. Total cost on the tiers below:
 **$0/month**.
 
+> **Why these providers, what they cost us, and how to move off them** —
+> [`docs/adr/`](docs/adr/). Each record ends with explicit revisit triggers and a
+> migration path. [`docs/architecture.md`](docs/architecture.md) has the system
+> diagrams.
+
 ### First deploy, in order
 
 The pieces below are order-dependent — the frontend build bakes in a backend URL
