@@ -314,7 +314,13 @@ backend/    FastAPI app (app/), Alembic migrations, pytest suite
 frontend/   Vite + React SPA (src/api, src/auth, src/pages, src/components)
 ingest/     energlens-ingest CLI (Claude PDF extraction → API upload)
 scripts/    pgdev.sh — local Postgres without Docker
+docs/design/  UI redesign handoff — open the .dc.html files in a browser
 ```
+
+`docs/design/README.md` is the spec for the front-end redesign: tokens, screen
+frames (2a, 2b, 3a–3g), a chart catalogue, and the derived metrics behind every
+figure. The two `.dc.html` files are scrollable prototype canvases and need
+`support.js` beside them; they open directly, with no build step or server.
 
 Design notes worth knowing:
 
