@@ -16,6 +16,9 @@
   --accent: #2a78d6;
   --accent-ink: #ffffff;
   --danger: #d03b3b;
+  /* Companion to --danger, for tinted backgrounds. Kept in sync by hand:
+     rgba() cannot take a hex custom property as its colour. */
+  --danger-rgb: 208, 59, 59;
   --good-text: #006300;
 }
 
@@ -36,6 +39,7 @@
     --series-4: #c98500;
     --accent: #3987e5;
     --danger: #d03b3b;
+    --danger-rgb: 208, 59, 59;
     --good-text: #0ca30c;
   }
 }
@@ -470,4 +474,51 @@ table.data th.num {
 .note {
   color: var(--muted-ink);
   font-size: 12.5px;
+}
+
+/* ---------- error states ---------- */
+
+/* Inline, next to whatever failed — never a modal, and never dressed up as an
+   empty state. Sized to sit either in a page body or inside a card. */
+.query-error {
+  background: rgba(var(--danger-rgb), 0.08);
+  border: 1px solid rgba(var(--danger-rgb), 0.22);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: left;
+}
+
+.query-error .query-error-title {
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.query-error .query-error-detail {
+  color: var(--text-secondary);
+  font-size: 13.5px;
+  margin-top: 4px;
+}
+
+.query-error .btn {
+  margin-top: 12px;
+}
+
+/* Inside a chart card the <h2> already says which panel this is, so the box
+   only needs to be small enough not to collapse the card's layout. */
+.query-error.compact {
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.query-error.compact .query-error-title {
+  font-size: 13px;
+}
+
+.query-error.compact .query-error-detail {
+  font-size: 12.5px;
+}
+
+.query-error.compact .btn {
+  margin-top: 8px;
 }

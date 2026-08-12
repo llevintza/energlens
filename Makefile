@@ -133,7 +133,8 @@ test-backend: ## Backend pytest. PYTEST_ARGS="-k currency" to narrow.
 test-ingest: ## Ingest pytest (never calls a paid API)
 	$(INGEST) pytest -q $(PYTEST_ARGS)
 
-test-frontend: typecheck ## The frontend has no test runner; typecheck is the gate
+test-frontend: typecheck ## Frontend vitest suite, after the typecheck
+	$(WEB) npm test
 
 ## -- the gate ---------------------------------------------------------------
 

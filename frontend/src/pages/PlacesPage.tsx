@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { useCreatePlace, useDeletePlace, usePlaces } from '../api/hooks'
 import type { Place } from '../api/types'
 import { PlaceForm } from '../components/PlaceForm'
+import { QueryError } from '../components/QueryError'
 
 function formatAddress(place: Place): string {
   return [
@@ -17,7 +18,14 @@ function formatAddress(place: Place): string {
 }
 
 export function PlacesPage() {
-  const { data: places, isLoading } = usePlaces()
+  const {
+    data: places,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = usePlaces()
   const createPlace = useCreatePlace()
   const deletePlace = useDeletePlace()
   const [adding, setAdding] = useState(false)
@@ -49,8 +57,29 @@ export function PlacesPage() {
         </div>
       )}
 
+      {/* Surfaced here rather than swallowed: `.mutate` has no caller waiting
+          on it, so without this a failed delete leaves the row in place and
+          says nothing at all. */}
+      {deletePlace.isError && (
+        <div style={{ marginBottom: 16 }}>
+          <QueryError
+            error={deletePlace.error}
+            title="Could not delete that place"
+            // A genuine retry, not a dismiss: `variables` still holds the id
+            // the failed call was given.
+            onRetry={() => deletePlace.mutate(deletePlace.variables)}
+            isRetrying={deletePlace.isPending}
+          />
+        </div>
+      )}
+
       {isLoading ? (
         <div className="empty">Loading…</div>
+      ) : isError ? (
+        // Before the empty-state branch, never after: `places` is undefined on
+        // failure too, so the order is what stops "we could not load this"
+        // from being reported as "you have no places".
+        <QueryError error={error} onRetry={refetch} isRetrying={isFetching} />
       ) : !places || places.length === 0 ? (
         !adding && (
           <div className="card empty">

@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ReactNode } from 'react'
+import type { UseQueryResult } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
 import { useCompare, usePlaces } from '../api/hooks'
@@ -6,6 +7,7 @@ import type { Granularity } from '../api/types'
 import { CompareChart } from '../components/charts/CompareChart'
 import { PlaceCharts, SummaryTiles } from '../components/charts/PlaceCharts'
 import { MAX_COMPARE_SERIES } from '../components/charts/tokens'
+import { QueryError } from '../components/QueryError'
 import { fmtNumber } from '../lib/format'
 
 type RangeKey = '12m' | '24m' | 'all'
@@ -16,6 +18,34 @@ function rangeFrom(key: RangeKey): string | undefined {
   const now = new Date()
   const d = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1)
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+/**
+ * Loading / failed / ready for one chart panel.
+ *
+ * The error branch comes first on purpose. Gating on `data` alone — as this
+ * did — leaves "Loading…" on screen permanently once a query has errored,
+ * because `data` stays undefined and nothing ever sets it.
+ */
+function ChartPanel<T>({
+  query,
+  children,
+}: {
+  query: UseQueryResult<T>
+  children: (data: T) => ReactNode
+}) {
+  if (query.isError) {
+    return (
+      <QueryError
+        compact
+        error={query.error}
+        onRetry={query.refetch}
+        isRetrying={query.isFetching}
+      />
+    )
+  }
+  if (!query.data) return <div className="empty">Loading…</div>
+  return <>{children(query.data)}</>
 }
 
 function ComparePanel({
@@ -36,15 +66,15 @@ function ComparePanel({
     <div className="chart-grid">
       <div className="card">
         <h2>Consumption per month (kWh)</h2>
-        {consumption.data ? (
-          <CompareChart
-            series={consumption.data.series.slice(0, MAX_COMPARE_SERIES)}
-            colorIndex={colorIndex}
-            formatValue={(v) => `${fmtNumber(v)} kWh`}
-          />
-        ) : (
-          <div className="empty">Loading…</div>
-        )}
+        <ChartPanel query={consumption}>
+          {(data) => (
+            <CompareChart
+              series={data.series.slice(0, MAX_COMPARE_SERIES)}
+              colorIndex={colorIndex}
+              formatValue={(v) => `${fmtNumber(v)} kWh`}
+            />
+          )}
+        </ChartPanel>
       </div>
       <div className="card">
         <h2>Cost per month</h2>
@@ -54,23 +84,30 @@ function ComparePanel({
             trends, not absolute heights.
           </div>
         )}
-        {cost.data ? (
-          <CompareChart
-            series={costSeries}
-            colorIndex={colorIndex}
-            labelFor={(s) => `${s.place_name} (${s.currency_code})`}
-            formatValue={(v) => fmtNumber(v, 2)}
-          />
-        ) : (
-          <div className="empty">Loading…</div>
-        )}
+        <ChartPanel query={cost}>
+          {() => (
+            <CompareChart
+              series={costSeries}
+              colorIndex={colorIndex}
+              labelFor={(s) => `${s.place_name} (${s.currency_code})`}
+              formatValue={(v) => fmtNumber(v, 2)}
+            />
+          )}
+        </ChartPanel>
       </div>
     </div>
   )
 }
 
 export function DashboardPage() {
-  const { data: places, isLoading } = usePlaces()
+  const {
+    data: places,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = usePlaces()
   const [selected, setSelected] = useState<string | 'all'>('all')
   const [range, setRange] = useState<RangeKey>('24m')
   const [granularity, setGranularity] = useState<Granularity>('month')
@@ -82,6 +119,14 @@ export function DashboardPage() {
   }, [places])
 
   if (isLoading) return <div className="empty">Loading…</div>
+
+  // Ahead of the welcome screen below, which would otherwise greet a user with
+  // two years of bills as though they had just signed up.
+  if (isError) {
+    return (
+      <QueryError error={error} onRetry={refetch} isRetrying={isFetching} />
+    )
+  }
 
   if (!places || places.length === 0) {
     return (
