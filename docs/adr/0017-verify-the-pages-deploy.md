@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-08-12
 - **Deciders:** llevintza
-- **Landed in:** branch `llevintza/pages-deploy-can-fail-on-main-with-no-signal`
+- **Landed in:** PR #35 (`2475b4b`)
 - **Related:** [ADR-0010](0010-frontend-hosting-github-pages.md),
   [ADR-0002](0002-monorepo-with-make-as-command-surface.md),
   [ADR-0014](0014-split-liveness-and-readiness-health-checks.md),
