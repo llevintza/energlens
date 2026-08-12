@@ -13,14 +13,23 @@ import {
 import type { Bill, Granularity } from '../api/types'
 import { BillForm } from '../components/BillForm'
 import { PlaceForm } from '../components/PlaceForm'
+import { QueryError } from '../components/QueryError'
 import { PlaceCharts, SummaryTiles } from '../components/charts/PlaceCharts'
+import { describeError } from '../lib/errors'
 import { fmtCurrency, fmtDate, fmtNumber } from '../lib/format'
 
 export function PlaceDetailPage() {
   const { placeId } = useParams()
   const navigate = useNavigate()
-  const { data: place, isLoading } = usePlace(placeId)
-  const { data: bills } = useBills(placeId)
+  const {
+    data: place,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = usePlace(placeId)
+  const bills = useBills(placeId)
   const updatePlace = useUpdatePlace(placeId!)
   const deletePlace = useDeletePlace()
   const createBill = useCreateBill(placeId!)
@@ -33,6 +42,18 @@ export function PlaceDetailPage() {
   const [granularity, setGranularity] = useState<Granularity>('month')
 
   if (isLoading) return <div className="empty">Loading…</div>
+
+  // "Place not found" is the truth for exactly one failure — a 404. It used to
+  // be the answer for all of them, which told someone whose network had
+  // blipped that their property had been deleted.
+  if (isError) {
+    const notFound = describeError(error).kind === 'notFound'
+    return notFound ? (
+      <div className="empty">Place not found</div>
+    ) : (
+      <QueryError error={error} onRetry={refetch} isRetrying={isFetching} />
+    )
+  }
   if (!place) return <div className="empty">Place not found</div>
 
   const closeBillForm = () => {
@@ -66,6 +87,21 @@ export function PlaceDetailPage() {
           Delete
         </button>
       </div>
+
+      {deletePlace.isError && (
+        <div style={{ marginBottom: 16 }}>
+          <QueryError
+            error={deletePlace.error}
+            title="Could not delete this place"
+            onRetry={() =>
+              deletePlace.mutate(deletePlace.variables, {
+                onSuccess: () => navigate('/places'),
+              })
+            }
+            isRetrying={deletePlace.isPending}
+          />
+        </div>
+      )}
 
       {editingPlace && (
         <div className="card" style={{ marginBottom: 16 }}>
@@ -125,7 +161,31 @@ export function PlaceDetailPage() {
           </div>
         )}
 
-        {!bills || bills.length === 0 ? (
+        {deleteBill.isError && (
+          <div style={{ marginBottom: 12 }}>
+            <QueryError
+              compact
+              error={deleteBill.error}
+              title="Could not delete that bill"
+              onRetry={() => deleteBill.mutate(deleteBill.variables)}
+              isRetrying={deleteBill.isPending}
+            />
+          </div>
+        )}
+
+        {bills.isLoading ? (
+          <div className="empty">Loading…</div>
+        ) : bills.isError ? (
+          // Same ordering rule as everywhere else — otherwise a failed fetch
+          // reports the user's bills as never having existed.
+          <QueryError
+            compact
+            error={bills.error}
+            title="Could not load the bills"
+            onRetry={bills.refetch}
+            isRetrying={bills.isFetching}
+          />
+        ) : !bills.data || bills.data.length === 0 ? (
           <div className="empty">
             No bills yet — add one manually or import with the ingest CLI.
           </div>
@@ -146,7 +206,7 @@ export function PlaceDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {bills.map((bill) => (
+                {bills.data.map((bill) => (
                   <tr key={bill.id}>
                     <td>
                       {fmtDate(bill.period_start)} – {fmtDate(bill.period_end)}

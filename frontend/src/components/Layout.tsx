@@ -1,9 +1,11 @@
-import { NavLink, Outlet } from 'react-router-dom'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../auth/AuthContext'
+import { ErrorBoundary } from './ErrorBoundary'
 
 export function Layout() {
   const { user, logout } = useAuth()
+  const { pathname } = useLocation()
   return (
     <>
       <nav className="topnav">
@@ -28,7 +30,13 @@ export function Layout() {
         </button>
       </nav>
       <main className="page-body">
-        <Outlet />
+        {/* Inside the shell, so one page crashing leaves the nav above intact
+            and the user still has somewhere to go. The `key` resets the
+            boundary on navigation — otherwise a caught error would persist and
+            blank out every page visited afterwards. */}
+        <ErrorBoundary variant="inline" key={pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
     </>
   )

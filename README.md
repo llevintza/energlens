@@ -77,7 +77,8 @@ Or one suite at a time:
 ```sh
 make test-backend              # pytest; PYTEST_ARGS="-k currency" to narrow
 make test-ingest               # never calls a paid API
-make typecheck                 # the frontend has no test runner
+make test-frontend             # vitest, after tsc -b
+make typecheck                 # just the frontend typecheck
 ```
 
 `make test-backend` needs the `energlens_test` database. If it is missing, or

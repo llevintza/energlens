@@ -1,6 +1,7 @@
 import { useSeries, useSummary } from '../../api/hooks'
 import type { Granularity, Metric, Place } from '../../api/types'
 import { fmtCurrency, fmtDate, fmtNumber } from '../../lib/format'
+import { QueryError } from '../QueryError'
 import { SeriesChart } from './SeriesChart'
 
 interface Props {
@@ -21,7 +22,22 @@ const METRICS: { metric: Metric; title: (c: string) => string; kind: 'bar' | 'li
 ]
 
 export function SummaryTiles({ place }: { place: Place }) {
-  const { data: summary } = useSummary(place.id)
+  const { data: summary, isError, error, refetch, isFetching } = useSummary(
+    place.id,
+  )
+  // Previously this returned null on failure too, so the KPI row simply was
+  // not there — the one failure mode with no symptom at all.
+  if (isError) {
+    return (
+      <QueryError
+        compact
+        error={error}
+        title="Could not load the summary figures"
+        onRetry={refetch}
+        isRetrying={isFetching}
+      />
+    )
+  }
   if (!summary || summary.bill_count === 0) return null
   const currency = summary.currency_code
   return (
@@ -79,12 +95,10 @@ function MetricChart({
   from?: string
   to?: string
 }) {
-  const { data, isLoading } = useSeries(place.id, {
-    metric,
-    granularity,
-    from,
-    to,
-  })
+  const { data, isLoading, isError, error, refetch, isFetching } = useSeries(
+    place.id,
+    { metric, granularity, from, to },
+  )
   const currency = place.currency_code
   const formatValue =
     metric === 'consumption'
@@ -97,7 +111,18 @@ function MetricChart({
       {granularity === 'bill' && (
         <div className="card-sub">one point per bill, plotted at period end</div>
       )}
-      {isLoading || !data ? (
+      {/* The error branch has to precede the `!data` one: after a failure
+          `isLoading` is false and `data` is still undefined, so the old
+          `isLoading || !data` test left this card reading "Loading…" for
+          good. */}
+      {isError ? (
+        <QueryError
+          compact
+          error={error}
+          onRetry={refetch}
+          isRetrying={isFetching}
+        />
+      ) : isLoading || !data ? (
         <div className="empty">Loading…</div>
       ) : (
         <SeriesChart
