@@ -98,6 +98,48 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      # Exposed so `smoke` can assert against the URL Pages actually published,
+      # rather than a second copy of it that could drift behind a rename or a
+      # custom domain.
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  # A green build proves the bundle compiled, not that the published site loads.
+  # PR #1 shipped a bundle that built cleanly and then 404'd every asset behind a
+  # 200 index.html — a blank page that no build-time check can catch, because the
+  # base path only becomes wrong once something serves it.
+  smoke:
+    needs: deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/smoke-pages.sh "${{ needs.deploy.outputs.page_url }}"
+
+  # This workflow runs on push to main, after the PR is gone, so it can never be
+  # a required status check — a red run here blocks nothing and, before this job,
+  # told nobody. It once sat red for five hours (issue #10).
+  #
+  # always(), not failure(): the job also has to close the issue when a later run
+  # goes green, and a `failure()` guard would never let it see a success.
+  alert:
+    needs: [build, deploy, smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    # Job-level permissions replace the workflow block entirely, so the pages
+    # and id-token grants deliberately do not reach this job.
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/ci-alert.sh pages-deploy \
+            "${{ join(needs.*.result, ' ') }}" \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

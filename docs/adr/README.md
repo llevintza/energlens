@@ -26,6 +26,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0014](0014-split-liveness-and-readiness-health-checks.md) | Split liveness and readiness health checks | Accepted | Ops |
 | [0015](0015-demo-seed-in-production.md) | Ship a public demo account | **Accepted (time-boxed)** | Security |
 | [0016](0016-verify-api-url-at-deploy-time.md) | Verify `API_URL` answers before building the frontend | Accepted | Ops |
+| [0017](0017-verify-the-pages-deploy.md) | Verify the Pages deploy, and route its failure to an issue | Accepted | Ops |
 
 ## Status legend
 
