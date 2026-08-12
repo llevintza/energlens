@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths: ["frontend/**", ".github/workflows/deploy-frontend.yml"]
   workflow_dispatch:
+    inputs:
+      skip_api_check:
+        description: "Ship without verifying API_URL (backend outage only)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -20,6 +25,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # A wrong API_URL cannot be caught any later: it is inlined into the bundle
+      # at *build* time, so a green build ships a SPA that talks to nothing. And
+      # because *.onrender.com is a wildcard, a guessed or decommissioned host
+      # answers with an ordinary 404 rather than failing DNS, so shape alone
+      # proves nothing (issue #11).
+      #
+      # Its own step, before setup-node, for two reasons: the red X lands on the
+      # thing that is actually broken — a repository variable — instead of on
+      # "Build", and a misconfigured value fails in seconds rather than after a
+      # cache restore, `npm ci` and `vite build`.
+      - name: Verify API_URL serves a live Energlens API
+        if: ${{ inputs.skip_api_check != true }}
+        timeout-minutes: 10
+        env:
+          # By env, never interpolated into `run:`, and named for the repository
+          # variable rather than VITE_* so the error names what you have to fix.
+          API_URL: ${{ vars.API_URL }}
+        run: scripts/api.sh preflight
+
+      # A push cannot supply inputs, so the bypass is unreachable from the
+      # automatic path — it takes a deliberate workflow_dispatch.
+      #
+      # It skips the *probe*, not the validation: `validate` is the offline half,
+      # and a backend outage is no reason to ship a bundle pointed at an empty or
+      # scheme-less URL. And it is never silent — the run carries a warning,
+      # because a skipped check that leaves no trace is the same silent-drift
+      # shape issue #11 is about.
+      - name: Validate API_URL without probing it
+        if: ${{ inputs.skip_api_check == true }}
+        env:
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          scripts/api.sh validate
+          echo "::warning::API_URL was NOT probed for this deploy (skip_api_check); only its shape was checked. Re-run the workflow once the backend answers."
 
       # Runs before the build so base_path can feed Vite's `base`. Emits
       # "/energlens" for a project site and "" behind a custom domain — append
@@ -41,17 +81,10 @@ jobs:
           VITE_API_URL: ${{ vars.API_URL }}
           VITE_OAUTH_PROVIDERS: ${{ vars.OAUTH_PROVIDERS }}
         run: |
-          # Check the shape, not just emptiness: Render's dashboard shows the
-          # bare host, and a scheme-less value would sail through a `test -n`
-          # and then throw "Invalid URL" from new URL() on every request.
-          case "$VITE_API_URL" in
-            https://?*)
-              ;;
-            *)
-              echo "::error::Repository variable API_URL must be an absolute https:// URL (got: '${VITE_API_URL:-<empty>}')."
-              exit 1
-              ;;
-          esac
+          # API_URL's shape *and* reachability are checked by "Verify API_URL"
+          # above, which fails the job before this step runs. Do not re-add a
+          # check here: one place owns that validation, and it is the one you can
+          # also run locally, with `make api-preflight`.
           npm ci
           npm run build
 

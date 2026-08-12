@@ -84,11 +84,14 @@ ones run a preflight that explains failures instead of raising
 | Check migrations match the models | `make migrate-check` |
 | Reset the database | `make db-reset` (drops both databases) |
 | Run the app | `make dev-api`, `make dev-web` |
+| Check the deployed API answers | `make api-preflight` |
 | Everything else | `make help` |
 
 `make check` is exactly what the merge-gating CI jobs run, so the two cannot
 disagree. `deploy-frontend.yml` is not part of it — that is a deploy, not a
-gate, and it depends on production-only repository variables.
+gate, and it depends on production-only repository variables. Neither is
+`make api-preflight`, for the same reason: it probes a live production host, and
+a gate that depends on Render's uptime blocks merges when Render is down.
 
 ## Conventions
 

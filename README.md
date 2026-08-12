@@ -253,10 +253,17 @@ at nothing.
 
    ```sh
    gh variable set API_URL --body https://<actual-host>
+   make api-preflight                       # proves an Energlens API actually answers there
    gh workflow run "Deploy frontend to GitHub Pages"
    ```
 
-4. **Verify**, allowing 30–60s for the free tier's cold start:
+   `make api-preflight` with no arguments reads the repository variable you just
+   set and probes `<API_URL>/health` — the same check the deploy runs, so a wrong
+   hostname is caught here rather than after a two-minute build.
+
+4. **Verify.** The deploy already proved `/health` answers, so this step is about
+   the database and the browser-level path no server-side probe covers. Allow
+   30–60s for the free tier's cold start:
 
    ```sh
    H=https://<actual-host>
@@ -271,9 +278,10 @@ at nothing.
 ### How the pieces fit
 
 - **Frontend — GitHub Pages** via `.github/workflows/deploy-frontend.yml`. Set
-  the repository variable `API_URL` to your hosted backend (the build *fails*
-  if it is unset, rather than shipping a bundle pointed at localhost), and
-  `OAUTH_PROVIDERS` only once the OAuth apps exist. The base path is read from
+  the repository variable `API_URL` to your hosted backend (the build *fails* if
+  it is unset, malformed, or if nothing serves `{"status":"ok"}` at
+  `<API_URL>/health` — `scripts/api.sh preflight`, also `make api-preflight`),
+  and `OAUTH_PROVIDERS` only once the OAuth apps exist. The base path is read from
   `actions/configure-pages` (`base_path` → `VITE_BASE`) rather than hardcoded,
   so it picks up the repo name and becomes `/` behind a custom domain.
   `postbuild` copies `index.html` → `404.html` for SPA deep links.
@@ -318,7 +326,8 @@ at nothing.
 backend/    FastAPI app (app/), Alembic migrations, pytest suite
 frontend/   Vite + React SPA (src/api, src/auth, src/pages, src/components)
 ingest/     energlens-ingest CLI (Claude PDF extraction → API upload)
-scripts/    pgdev.sh — local Postgres without Docker
+scripts/    db.sh + pgdev.sh — local Postgres without Docker
+            api.sh — preflight for the *deployed* API (make api-preflight)
 ```
 
 Design notes worth knowing:
