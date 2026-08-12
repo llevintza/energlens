@@ -183,7 +183,7 @@ flowchart LR
     CI -->|frontend-build| T2["tsc -b · vite build"]
     T1 & T2 --> M["Squash-merge to main<br/>(protect-main ruleset)"]
     M --> D1["Render auto-deploy<br/>alembic upgrade head → seed → uvicorn"]
-    M -.->|"only if frontend/** changed"| D2["deploy-frontend.yml<br/>→ GitHub Pages"]
+    M -.->|"only if frontend/** changed"| D2["deploy-frontend.yml<br/>verify API_URL → vite build<br/>→ GitHub Pages"]
 ```
 
 `make check` is defined as the union of the two required jobs, so the local gate and
@@ -192,8 +192,19 @@ CI cannot disagree ([ADR-0002](adr/0002-monorepo-with-make-as-command-surface.md
 **The dotted edge is a real trap.** `deploy-frontend.yml` has a `paths` filter of
 `frontend/**`, and `API_URL` is inlined into the bundle at *build* time. Changing the
 `API_URL` repository variable therefore triggers no deploy at all — it needs an
-explicit `gh workflow run`. This is tracked in
-[#11](https://github.com/llevintza/energlens/issues/11).
+explicit `gh workflow run`.
+
+What the deploy *does* guarantee, since [#11](https://github.com/llevintza/energlens/issues/11)
+([ADR-0016](adr/0016-verify-api-url-at-deploy-time.md)), is that the value it bakes in was
+answering when it was baked. A **Verify API_URL** step runs
+[`scripts/api.sh preflight`](../scripts/api.sh) before `npm ci`, and the job fails unless
+`GET <API_URL>/health` returns `{"status":"ok"}` within ten attempts. That closes "a guessed
+hostname ships green" — `*.onrender.com` is a wildcard, so a wrong host answers with a
+plausible 404 rather than a DNS error. It does **not** close the drift window above: a
+backend decommissioned *after* the last frontend deploy stays invisible until something
+under `frontend/**` changes, which is the same shape as
+[#10](https://github.com/llevintza/energlens/issues/10). `make api-preflight` checks the
+live value at any time.
 
 ---
 

@@ -12,6 +12,7 @@
 ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 DB      := $(ROOT)/scripts/db.sh
+API     := $(ROOT)/scripts/api.sh
 UV      := uv
 BACKEND := $(UV) run --directory $(ROOT)/backend
 INGEST  := $(UV) run --directory $(ROOT)/ingest
@@ -38,7 +39,7 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
         migrate migration migrate-check lock-check seed dev-api dev-web \
         typecheck build-web \
         test test-backend test-ingest test-frontend \
-        check ci-backend ci-frontend clean
+        check ci-backend ci-frontend api-preflight clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -158,6 +159,20 @@ ci-backend: lock-check migrate-check test-backend test-ingest
 # that adding a real frontend test runner to test-frontend lands in `make check`
 # automatically instead of silently escaping the gate.
 ci-frontend: test-frontend build-web
+
+## -- deploy -----------------------------------------------------------------
+
+# Deliberately outside `make check`, for exactly the reason deploy-frontend.yml
+# is: it needs a production URL and a live third-party service, and a merge gate
+# that depends on Render's uptime is a gate that blocks merges when Render is
+# down. With no API_URL it reads the repository variable via `gh`, so a bare
+# `make api-preflight` checks precisely what the next deploy would bake in.
+#
+#   make api-preflight
+#   make api-preflight API_URL=https://energlens-api.onrender.com
+#   make api-preflight API_URL=http://localhost:8000     # against `make dev-api`
+api-preflight: ## Assert an Energlens API answers at API_URL (default: the repo variable)
+	@API_URL="$(API_URL)" $(API) preflight
 
 clean: ## Remove build output and caches
 	rm -rf $(ROOT)/frontend/dist $(ROOT)/frontend/node_modules/.tmp
