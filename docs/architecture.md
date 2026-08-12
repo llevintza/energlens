@@ -184,10 +184,16 @@ flowchart LR
     T1 & T2 --> M["Squash-merge to main<br/>(protect-main ruleset)"]
     M --> D1["Render auto-deploy<br/>alembic upgrade head → seed → uvicorn"]
     M -.->|"only if frontend/** changed"| D2["deploy-frontend.yml<br/>verify API_URL → vite build<br/>→ GitHub Pages"]
+    D2 --> S["smoke: fetch the published page,<br/>assert its bundle resolves"]
+    CRON(["daily cron"]) --> S
+    S -.->|on failure| A["ci-alert.sh<br/>→ tracking issue"]
 ```
 
 `make check` is defined as the union of the two required jobs, so the local gate and
 CI cannot disagree ([ADR-0002](adr/0002-monorepo-with-make-as-command-surface.md)).
+Nothing to the right of the merge is part of it — `deploy-frontend.yml`, `make
+api-preflight` and `make smoke-web` all reach for a live production host, and a gate
+that depends on third-party uptime blocks merges when that third party is down.
 
 **The dotted edge is a real trap.** `deploy-frontend.yml` has a `paths` filter of
 `frontend/**`, and `API_URL` is inlined into the bundle at *build* time. Changing the
@@ -202,9 +208,15 @@ answering when it was baked. A **Verify API_URL** step runs
 hostname ships green" — `*.onrender.com` is a wildcard, so a wrong host answers with a
 plausible 404 rather than a DNS error. It does **not** close the drift window above: a
 backend decommissioned *after* the last frontend deploy stays invisible until something
-under `frontend/**` changes, which is the same shape as
-[#10](https://github.com/llevintza/energlens/issues/10). `make api-preflight` checks the
-live value at any time.
+under `frontend/**` changes. The daily `Pages smoke test` closes the *frontend* half of
+that window — it re-checks the published bundle, not the API that bundle points at — so
+`make api-preflight` is still what covers the backend half.
+
+**Nothing on the right-hand side is a required check, and nothing can be** — those gate
+pull requests, and everything past the merge runs after the PR is gone. A red deploy
+blocks nothing, which is how one stayed unnoticed for five hours. The smoke job, the
+daily cron, and the auto-filed issue exist because that silence is structural rather
+than fixable ([ADR-0017](adr/0017-verify-the-pages-deploy.md)).
 
 ---
 

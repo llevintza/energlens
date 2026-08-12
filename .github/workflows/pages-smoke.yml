@@ -1,0 +1,56 @@
+name: Pages smoke test
+
+# The deploy's own smoke job only proves the site was good *at deploy time*, and
+# deploy-frontend.yml has a `paths` filter of frontend/**. Changing the API_URL
+# variable, renaming the repo, or adding a custom domain therefore triggers no
+# deploy at all — the live bundle keeps the old base path and the old API URL
+# indefinitely, with every check green. Nothing else notices that drift, so this
+# checks the live site on a clock instead of on a push.
+on:
+  schedule:
+    # 06:17 UTC. Off the hour on purpose: GitHub drops scheduled runs when the
+    # top-of-hour queue is congested. Scheduled workflows also run only from the
+    # default branch, and are disabled automatically after 60 days without any
+    # repository activity.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+# Its own group — deliberately NOT `pages`, which deploy-frontend.yml uses with
+# cancel-in-progress: true. Sharing it would let this check cancel a real deploy.
+concurrency:
+  group: pages-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # scripts/smoke-pages.sh reads the published URL from the Pages API rather
+      # than hardcoding it, so a custom domain needs no change here.
+      pages: read
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/smoke-pages.sh
+
+  # Files under its own topic, separate from the deploy's. Sharing one issue
+  # would let a green run here auto-close a still-broken deploy: a build that
+  # dies on the API_URL guard never republishes, so the old — working — bundle
+  # stays live and this check keeps passing.
+  alert:
+    needs: [smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/ci-alert.sh pages-drift \
+            "${{ join(needs.*.result, ' ') }}" \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

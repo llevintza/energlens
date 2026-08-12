@@ -1,5 +1,10 @@
 # ⚡ Energlens
 
+[![Backend CI](https://github.com/llevintza/energlens/actions/workflows/backend-ci.yml/badge.svg?branch=main)](https://github.com/llevintza/energlens/actions/workflows/backend-ci.yml)
+[![Frontend CI](https://github.com/llevintza/energlens/actions/workflows/frontend-ci.yml/badge.svg?branch=main)](https://github.com/llevintza/energlens/actions/workflows/frontend-ci.yml)
+[![Deploy](https://github.com/llevintza/energlens/actions/workflows/deploy-frontend.yml/badge.svg?branch=main)](https://github.com/llevintza/energlens/actions/workflows/deploy-frontend.yml)
+[![Live site](https://github.com/llevintza/energlens/actions/workflows/pages-smoke.yml/badge.svg?branch=main)](https://github.com/llevintza/energlens/actions/workflows/pages-smoke.yml)
+
 Track the evolution of electricity bills across your properties — consumption
 (kWh), cost, and effective price per kWh over time, with charts your utility
 provider doesn't give you.
@@ -273,8 +278,17 @@ at nothing.
    ```
 
    A 404 with an `x-render-routing: no-server` header means no service claims that
-   hostname — you have the wrong one. Then register an account through the live UI
-   and add a place, which is what actually exercises CORS and JWT cross-origin.
+   hostname — you have the wrong one. Then check the published frontend and
+   register an account through the live UI, adding a place — that is what actually
+   exercises CORS and JWT cross-origin:
+
+   ```sh
+   make smoke-web    # the page loads and its bundle resolves under the right base
+   ```
+
+   `make smoke-web` is the same check the deploy runs, so it reproduces a red
+   `smoke` job locally without redeploying anything. It reads the site's URL from
+   the Pages API; pass `URL=…` to point it elsewhere.
 
 ### How the pieces fit
 
@@ -292,6 +306,20 @@ at nothing.
   adding a custom domain, or changing `API_URL` therefore does not redeploy on
   its own — the live bundle keeps the old values until you re-run the workflow
   via `workflow_dispatch`.
+
+  **The deploy is not gated by a required status check, and cannot be.** The
+  `protect-main` ruleset requires `backend-tests` and `frontend-build`; both run
+  on the pull request, while `deploy-frontend.yml` runs on push to `main` — after
+  the PR is gone, with nothing left to block. Worse, `frontend-build` compiles
+  with `VITE_BASE` and `VITE_API_URL` unset, so it is green on exactly the
+  configuration the deploy refuses to ship. A red deploy on `main` therefore
+  blocks nothing, and once went unnoticed for five hours. Three things report it
+  now, none of them a gate: the `smoke` job fails the deploy run when the
+  published site does not load, the badges above go red, and `scripts/ci-alert.sh`
+  files an issue that closes itself on the next green run. `Pages smoke test`
+  re-checks the live site daily, which is what catches the *frontend* half of the
+  build-time-config drift described above — the backend half is `make api-preflight`.
+  See [ADR-0017](docs/adr/0017-verify-the-pages-deploy.md).
 
 - **Backend — Render free web service** via `render.yaml` (Blueprint → point it
   at this repo). Paste the Neon `DATABASE_URL` in the dashboard. `CORS_ORIGINS`

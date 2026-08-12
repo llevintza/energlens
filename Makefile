@@ -13,6 +13,7 @@ ROOT := $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 
 DB      := $(ROOT)/scripts/db.sh
 API     := $(ROOT)/scripts/api.sh
+SMOKE   := $(ROOT)/scripts/smoke-pages.sh
 UV      := uv
 BACKEND := $(UV) run --directory $(ROOT)/backend
 INGEST  := $(UV) run --directory $(ROOT)/ingest
@@ -39,7 +40,7 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
         migrate migration migrate-check lock-check seed dev-api dev-web \
         typecheck build-web \
         test test-backend test-ingest test-frontend \
-        check ci-backend ci-frontend api-preflight clean
+        check ci-backend ci-frontend api-preflight smoke-web clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -141,7 +142,8 @@ test-frontend: typecheck ## Frontend vitest suite, after the typecheck
 
 # `make check` is the union of the merge-gating CI jobs, so the two cannot
 # disagree. deploy-frontend.yml is deliberately not included: it is a deploy,
-# not a gate, and depends on production-only repository variables.
+# not a gate, and depends on production-only repository variables. Nor are
+# api-preflight and smoke-web, for the reasons stated where they are defined.
 check: ci-backend ci-frontend ## Run everything CI runs. The gate.
 
 # CI installs with `uv sync --locked`, which refuses to re-lock; local `uv run`
@@ -173,6 +175,17 @@ ci-frontend: test-frontend build-web
 #   make api-preflight API_URL=http://localhost:8000     # against `make dev-api`
 api-preflight: ## Assert an Energlens API answers at API_URL (default: the repo variable)
 	@API_URL="$(API_URL)" $(API) preflight
+
+# The other half: api-preflight checks what the *next* deploy would bake in,
+# this checks what the *last* one actually published. Outside `make check` for
+# the same reason, plus a stronger one — it fetches the live site, which says
+# nothing about the branch you are asking about. With no URL it asks the GitHub
+# API where Pages is published, so a rename or a custom domain needs no edit.
+#
+#   make smoke-web
+#   make smoke-web URL=https://llevintza.github.io/energlens/
+smoke-web: ## Assert the deployed Pages site loads (default: this repo's Pages URL)
+	@$(SMOKE) $(URL)
 
 clean: ## Remove build output and caches
 	rm -rf $(ROOT)/frontend/dist $(ROOT)/frontend/node_modules/.tmp
