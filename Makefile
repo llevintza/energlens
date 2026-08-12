@@ -101,7 +101,7 @@ migration: ## New migration: make migration m="add reference to bill"
 	@$(DB) preflight dev
 	$(BACKEND) alembic revision --autogenerate -m "$(m)"
 	@echo "Review the generated file before committing — autogenerate cannot see"
-	@echo "renames (it emits drop+add, which loses data). See docs/migrations.md."
+	@echo "renames (it emits drop+add, which loses data). See docs/adr/0005-*.md."
 
 seed: ## Load demo data (demo@example.com / demo1234)
 	@$(DB) preflight dev
