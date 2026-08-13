@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { Bill } from '../api/types'
 import { MAIN_RESIDENCE, SECOND_HOME, seedBillsNewestFirst } from './fixtures'
 import {
+  billComparisons,
   composition,
   contractRateChange,
   cumulativeExcess,
@@ -351,5 +352,55 @@ describe('headline selection', () => {
     ])
     const h = headline(trailingComparison(monthlyBuckets(bills)), ctx)
     expect(h.kind).toBe('insufficient')
+  })
+})
+
+describe('bill comparisons (3f)', () => {
+  const buckets = monthlyBuckets(main())
+
+  it('measures a month against its neighbours', () => {
+    const c = billComparisons(buckets, '2026-07')
+    expect(c.previousMonth.against).toBe('2026-06')
+    expect(c.sameMonthLastYear.against).toBe('2025-07')
+    expect(c.previousMonth.delta.pct).not.toBeNull()
+  })
+
+  it('says "no comparison" rather than 0% for the first month on record', () => {
+    const c = billComparisons(buckets, '2024-08')
+    expect(c.previousMonth.against).toBeNull()
+    expect(c.previousMonth.delta.pct).toBeNull()
+    expect(c.sameMonthLastYear.against).toBeNull()
+  })
+
+  it('takes "cheapest" by effective price, not by total', () => {
+    // January is the most expensive month by total (peak consumption) and among the
+    // cheapest per kWh (the standing charge is spread over more units). Confusing the
+    // two is the misreading the redesign exists to correct.
+    const c = billComparisons(buckets, '2026-07')
+    const cheapest = buckets.find((b) => b.period === c.cheapestMonth.against)
+    const cheapestByTotal = [...buckets].sort((a, b) => a.cost - b.cost)[0]
+    expect(cheapest).toBeDefined()
+    expect(cheapest!.effective).toBe(
+      Math.min(
+        ...buckets
+          .filter((b) => b.period !== '2026-07')
+          .map((b) => b.effective as number),
+      ),
+    )
+    expect(cheapest!.period).not.toBe(cheapestByTotal.period)
+  })
+
+  it('averages the twelve months before, not the twelve around', () => {
+    const c = billComparisons(buckets, '2026-07')
+    expect(c.twelveMonthAverage.against).toBe('12-month average')
+    expect(c.twelveMonthAverage.againstValue).not.toBeNull()
+  })
+
+  it('gives every cell nulls for a month that is not there at all', () => {
+    const c = billComparisons(buckets, '1999-01')
+    for (const cell of Object.values(c)) {
+      expect(cell.against).toBeNull()
+      expect(cell.delta.pct).toBeNull()
+    }
   })
 })

@@ -13,6 +13,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/shell/AppShell'
 import { AuthPage } from './pages/AuthPage'
+import { BillDetailPage } from './pages/BillDetailPage'
 import { ComparePage } from './pages/ComparePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { HomeRoute } from './pages/HomeRoute'
@@ -87,6 +88,10 @@ export default function App() {
                     <Route
                       path="/places/:placeId/compare"
                       element={<ComparePage />}
+                    />
+                    <Route
+                      path="/places/:placeId/bills/:billId"
+                      element={<BillDetailPage />}
                     />
                     {/* Bill and place CRUD still lives on the old detail page until
                         #21 turns both forms into drawers over the page you were on.
