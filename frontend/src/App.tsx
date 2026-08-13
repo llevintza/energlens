@@ -17,9 +17,11 @@ import { BillDetailPage } from './pages/BillDetailPage'
 import { ComparePage } from './pages/ComparePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { HomeRoute } from './pages/HomeRoute'
+import { SettingsPage } from './pages/SettingsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceDetailPage } from './pages/PlaceDetailPage'
 import { PlacesPage } from './pages/PlacesPage'
+import { PreferencesProvider } from './prefs/PreferencesProvider'
 import { ThemeProvider } from './theme/ThemeProvider'
 
 // Where error handling lives, decided once so the app does not grow three
@@ -67,6 +69,7 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
+        <PreferencesProvider>
         {/* Outermost net. Anything thrown by the router, the auth provider or a
             page that the inner boundary in AppShell does not cover lands here —
             without it, a render throw leaves an empty #root and no message. */}
@@ -97,6 +100,7 @@ export default function App() {
                         #21 turns both forms into drawers over the page you were on.
                         Keeping it routed means "Add bill" leads somewhere real in the
                         meantime, rather than being a control with nothing behind it. */}
+                    <Route path="/settings" element={<SettingsPage />} />
                     <Route
                       path="/places/:placeId/manage"
                       element={<PlaceDetailPage />}
@@ -113,6 +117,7 @@ export default function App() {
             </AuthProvider>
           </BrowserRouter>
         </ErrorBoundary>
+        </PreferencesProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

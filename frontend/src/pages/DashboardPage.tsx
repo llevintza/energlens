@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { useBills, useCreateBill, usePlace } from '../api/hooks'
+import { usePreferences } from '../prefs/PreferencesProvider'
 import { ChartFrame, chartStatus } from '../components/charts/ChartFrame'
 import { HeroPriceUse } from '../components/charts/HeroPriceUse'
 import { RateEvidence } from '../components/charts/RateEvidence'
@@ -67,7 +68,10 @@ export function DashboardPage() {
   const bills = useBills(placeId)
   const createBill = useCreateBill(placeId ?? '')
 
-  const [range, setRange] = useState<RangeKey>('24m')
+  /* Seeded from the persisted preference, then local — changing the range here is a
+     look at this place, not a new default for every place. */
+  const { prefs } = usePreferences()
+  const [range, setRange] = useState<RangeKey>(prefs.defaultRange)
   const [granularity, setGranularity] = useState<Granularity>('month')
   const [addingBill, setAddingBill] = useState(false)
 

@@ -10,6 +10,7 @@ from app.auth.oauth import github_oauth_client, google_oauth_client
 from app.auth.users import fastapi_users
 from app.config import settings
 from app.db import get_async_session
+from app.routers.account import router as account_router
 from app.routers.bills import router as bills_router
 from app.routers.oauth_login import router as oauth_login_router
 from app.routers.places import router as places_router
@@ -35,6 +36,9 @@ app.include_router(
     prefix="/auth",
     tags=["auth"],
 )
+# Before the generated users router, deliberately: its DELETE /users/{id} would
+# otherwise match /users/me first and 422 trying to read "me" as a UUID.
+app.include_router(account_router)
 app.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
