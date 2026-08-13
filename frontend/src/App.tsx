@@ -12,14 +12,13 @@ import { OAuthCallbackPage } from './auth/OAuthCallbackPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/shell/AppShell'
+import { AuthPage } from './pages/AuthPage'
 import { ComparePage } from './pages/ComparePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { HomeRoute } from './pages/HomeRoute'
-import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceDetailPage } from './pages/PlaceDetailPage'
 import { PlacesPage } from './pages/PlacesPage'
-import { RegisterPage } from './pages/RegisterPage'
 import { ThemeProvider } from './theme/ThemeProvider'
 
 // Where error handling lives, decided once so the app does not grow three
@@ -74,8 +73,11 @@ export default function App() {
           <BrowserRouter basename={import.meta.env.BASE_URL}>
             <AuthProvider>
               <Routes>
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
+                {/* Both paths mount one screen: the path sets the initial mode and the
+                    toggle switches without navigating. Keeping both means the links and
+                    bookmarks that already exist keep working. */}
+                <Route path="/login" element={<AuthPage />} />
+                <Route path="/register" element={<AuthPage />} />
                 <Route path="/auth/callback" element={<OAuthCallbackPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppShell />}>

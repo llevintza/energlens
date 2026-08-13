@@ -1,0 +1,262 @@
+/* 3a — Sign in. The only screen without the shell.
+ * 3b — First run. Shell intact; see .firstrun below. */
+
+.auth-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.auth-split {
+  width: 100%;
+  max-width: 880px;
+  display: flex;
+  align-items: stretch;
+  min-height: 520px;
+  border: 1px solid var(--rule);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--panel);
+}
+
+/* Left panel — the product's argument, before there is any data to argue with. */
+
+.auth-aside {
+  width: 360px;
+  flex: none;
+  background: var(--panel);
+  border-right: 1px solid var(--rule);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.auth-wordmark {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.auth-tagline {
+  font-size: 12.5px;
+  color: var(--ink4);
+  margin-top: 3px;
+}
+
+.auth-pitch {
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  text-wrap: pretty;
+  margin: 0;
+}
+
+.auth-spark-caption {
+  font-size: 12px;
+  color: var(--ink4);
+  margin-top: 8px;
+}
+
+/* Right column — the form. */
+
+.auth-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 30px;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.auth-main-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 14px;
+}
+
+.auth-field label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink3);
+}
+
+.auth-field input {
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 9px 11px;
+  font: inherit;
+  font-size: 14px;
+  background: var(--field);
+  color: var(--ink);
+}
+
+.auth-field input:focus-visible {
+  border-color: var(--acc);
+}
+
+.auth-field .err {
+  font-size: 12px;
+  color: var(--up);
+}
+
+.auth-submit {
+  width: 100%;
+  margin-top: 20px;
+  padding: 10px;
+  background: var(--acc);
+  border: 1px solid var(--acc);
+  color: var(--selink);
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--ink4);
+}
+
+.auth-or::before,
+.auth-or::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--rule2);
+}
+
+.auth-reassurance {
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink4);
+  margin-top: 20px;
+}
+
+.auth-error {
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--up);
+  background: rgba(var(--up-rgb), 0.08);
+  border: 1px solid rgba(var(--up-rgb), 0.22);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+@media (max-width: 760px) {
+  /* The aside is the argument, not decoration, so it stacks above the form rather than
+     being dropped — but the sparkline shrinks to fit. */
+  .auth-split {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .auth-aside {
+    width: 100%;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 24px 20px;
+  }
+
+  .auth-main {
+    padding: 24px 20px;
+  }
+
+  .auth-submit,
+  .auth-field input {
+    min-height: 44px;
+  }
+}
+
+/* 3b — First run. */
+
+.firstrun {
+  max-width: 620px;
+}
+
+.firstrun h1 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0 0 8px;
+  color: var(--ink);
+}
+
+.firstrun-standfirst {
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink2);
+  margin: 0 0 22px;
+  text-wrap: pretty;
+}
+
+.firstrun-steps {
+  list-style: none;
+  margin: 0 0 24px;
+  padding: 0;
+}
+
+.firstrun-steps li {
+  display: flex;
+  gap: 14px;
+  padding: 16px 0;
+  border-top: 1px solid var(--rule2);
+}
+
+.firstrun-steps li:last-child {
+  border-bottom: 1px solid var(--rule2);
+}
+
+.firstrun-num {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--rule);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink3);
+}
+
+.firstrun-step-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 3px;
+}
+
+.firstrun-step-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink2);
+  margin: 0;
+  text-wrap: pretty;
+}

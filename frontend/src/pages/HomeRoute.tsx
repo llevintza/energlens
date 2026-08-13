@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom'
 
 import { usePlaces } from '../api/hooks'
 import { QueryError } from '../components/QueryError'
+import { FirstRunPage } from './FirstRunPage'
 
 /**
  * `/` is not a screen in the redesign — the dashboard belongs to a place. This resolves
@@ -28,15 +29,8 @@ export function HomeRoute() {
   if (places.isPending) return <div className="skeleton" style={{ height: 236 }} />
 
   const first = places.data?.[0]
-  if (!first) {
-    /* Stands in until #20 replaces it with the designed first-run screen. */
-    return (
-      <div className="empty-panel" style={{ height: 200 }}>
-        <span>No places yet. Add one to start tracking bills.</span>
-        <Navigate to="/places" replace />
-      </div>
-    )
-  }
+  /* Only a query that genuinely succeeded and came back empty reaches first run. */
+  if (!first) return <FirstRunPage />
 
   return <Navigate to={`/places/${first.id}`} replace />
 }

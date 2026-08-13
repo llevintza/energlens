@@ -3,6 +3,7 @@
 @import './styles/charts.css';
 @import './styles/dashboard.css';
 @import './styles/compare.css';
+@import './styles/auth.css';
 
 /* Everything below is the pre-redesign class vocabulary. It is repointed at the new
    token names so the screens the redesign has not reached yet keep rendering — each

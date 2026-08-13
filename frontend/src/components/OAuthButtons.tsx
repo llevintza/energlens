@@ -12,11 +12,15 @@ const LABELS: Record<string, string> = {
   github: 'Continue with GitHub',
 }
 
+/** Whether any provider is configured at build time. Exported so the caller can drop
+ *  its own "OR" divider too — a rule with nothing under it is worse than no rule, and an
+ *  unconfigured API is the live site's default, not an edge case. */
+export const hasOAuthProviders = PROVIDERS.length > 0
+
 export function OAuthButtons() {
-  if (PROVIDERS.length === 0) return null
+  if (!hasOAuthProviders) return null
   return (
     <>
-      <div className="auth-divider">or</div>
       <div className="oauth-row">
         {PROVIDERS.map((provider: string) => (
           <button
