@@ -85,16 +85,17 @@ ones run a preflight that explains failures instead of raising
 | Reset the database | `make db-reset` (drops both databases) |
 | Run the app | `make dev-api`, `make dev-web` |
 | Check the deployed API answers | `make api-preflight` |
+| Check the deployed API's OpenAPI contract | `make api-smoke` |
 | Check the deployed site loads | `make smoke-web` |
 | Everything else | `make help` |
 
 `make check` is exactly what the merge-gating CI jobs run, so the two cannot
 disagree. `deploy-frontend.yml` is not part of it — that is a deploy, not a
 gate, and it depends on production-only repository variables. Neither is
-`make api-preflight`, for the same reason: it probes a live production host, and
-a gate that depends on Render's uptime blocks merges when Render is down. Nor is
-`make smoke-web`: it fetches the *live* site, which tells you nothing about the
-branch in front of you.
+`make api-preflight` or `make api-smoke`, for the same reason: they probe a live
+production host, and a gate that depends on Render's uptime blocks merges when
+Render is down. Nor is `make smoke-web`: it fetches the *live* site, which tells
+you nothing about the branch in front of you.
 
 ## Conventions
 

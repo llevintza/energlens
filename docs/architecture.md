@@ -183,17 +183,21 @@ flowchart LR
     CI -->|frontend-build| T2["tsc -b · vite build"]
     T1 & T2 --> M["Squash-merge to main<br/>(protect-main ruleset)"]
     M --> D1["Render auto-deploy<br/>alembic upgrade head → seed → uvicorn"]
+    M -->|"backend/** or render.yaml"| AS["api-smoke.yml<br/>health + OpenAPI contract"]
     M -.->|"only if frontend/** changed"| D2["deploy-frontend.yml<br/>verify API_URL → vite build<br/>→ GitHub Pages"]
     D2 --> S["smoke: fetch the published page,<br/>assert its bundle resolves"]
     CRON(["daily cron"]) --> S
+    CRON --> AS
     S -.->|on failure| A["ci-alert.sh<br/>→ tracking issue"]
+    AS -.->|on failure| A
 ```
 
 `make check` is defined as the union of the two required jobs, so the local gate and
 CI cannot disagree ([ADR-0002](adr/0002-monorepo-with-make-as-command-surface.md)).
 Nothing to the right of the merge is part of it — `deploy-frontend.yml`, `make
-api-preflight` and `make smoke-web` all reach for a live production host, and a gate
-that depends on third-party uptime blocks merges when that third party is down.
+api-preflight`, `make api-smoke` and `make smoke-web` all reach for a live production
+host, and a gate that depends on third-party uptime blocks merges when that third
+party is down.
 
 **The dotted edge is a real trap.** `deploy-frontend.yml` has a `paths` filter of
 `frontend/**`, and `API_URL` is inlined into the bundle at *build* time. Changing the
@@ -209,8 +213,11 @@ hostname ships green" — `*.onrender.com` is a wildcard, so a wrong host answer
 plausible 404 rather than a DNS error. It does **not** close the drift window above: a
 backend decommissioned *after* the last frontend deploy stays invisible until something
 under `frontend/**` changes. The daily `Pages smoke test` closes the *frontend* half of
-that window — it re-checks the published bundle, not the API that bundle points at — so
-`make api-preflight` is still what covers the backend half.
+that window — it re-checks the published bundle, not the API that bundle points at.
+The backend half is `make api-smoke` / `api-smoke.yml`
+([ADR-0019](adr/0019-verify-the-api-deploy.md)): `/health` alone missed a stale revision
+in [#48](https://github.com/llevintza/energlens/issues/48), so smoke also asserts the
+OpenAPI contract.
 
 **Nothing on the right-hand side is a required check, and nothing can be** — those gate
 pull requests, and everything past the merge runs after the PR is gone. A red deploy

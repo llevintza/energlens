@@ -2,6 +2,7 @@
 # Reachability checks for the *hosted* Energlens API.
 #
 #   scripts/api.sh preflight [url]   assert an Energlens API answers at <url>/health
+#   scripts/api.sh smoke [url]       preflight + OpenAPI contract (title, DELETE /users/me)
 #   scripts/api.sh validate [url]    the offline half only: shape and format
 #
 # <url> defaults to $API_URL. With neither, and outside Actions, it falls back to
@@ -14,6 +15,9 @@
 # decommissioned service returns a plain HTTP 404 instead of failing DNS. Nothing
 # downstream can catch that — API_URL is inlined at *build* time — so every check
 # stays green and the SPA reports "Login failed — is the API running?" (issue #11).
+#
+# smoke exists because /health alone is not enough: a live process can still be
+# serving yesterday's commit (issue #48). OpenAPI is the check that answers that.
 #
 # Every failure path prints the command that fixes it.
 set -eu
@@ -68,6 +72,17 @@ fix_url() {
   say "     The last line is not optional: API_URL is inlined at build time and the"
   say "     workflow's paths filter is frontend/**, so setting the variable deploys"
   say "     nothing on its own."
+}
+
+# Opposite failure mode from fix_url: the hostname is right and /health is green,
+# but the revision is stale. Point at Render, not at API_URL (issue #48).
+fix_stale() {
+  say ""
+  say "Fix: the API is up but its OpenAPI surface is behind main."
+  say "     In the Render dashboard: energlens-api → Manual Deploy → Deploy latest commit."
+  say "     Confirm Auto Deploy is On Commit (render.yaml sets autoDeployTrigger: commit)."
+  say "     If the Blueprint did not pick that up, Manual Sync the Blueprint once."
+  say "     Then: make api-smoke"
 }
 
 reject() {
@@ -260,10 +275,126 @@ cmd_preflight() {
   exit 1
 }
 
+# OpenAPI contract for "is this revision current enough". /health proves the
+# process; this proves the surface. Exit 0 ok, 2 wrong title, 3 missing delete.
+check_openapi_contract() {
+  have python3 || die "error: no python3 on PATH.
+     Fix: install Python 3 (GitHub Actions runners have it; locally: brew install python)"
+
+  oa_rc=0
+  oa_out="$(curl -sS --connect-timeout "$CONNECT_TIMEOUT" --max-time "$TIMEOUT" \
+    -w '|HTTP:%{http_code}' "$url/openapi.json" 2>&1)" || oa_rc=$?
+  oa_code="${oa_out##*|HTTP:}"
+  oa_body="${oa_out%|HTTP:*}"
+
+  if [ "$oa_code" != "200" ]; then
+    say "  openapi: HTTP $oa_code (curl exit $oa_rc) — $(excerpt "$oa_body")"
+    return 1
+  fi
+
+  # python exits: 0 ok, 2 wrong/missing title, 3 missing DELETE /users/me, 1 parse
+  py_rc=0
+  printf '%s' "$oa_body" | python3 -c '
+import json, sys
+try:
+    doc = json.load(sys.stdin)
+except json.JSONDecodeError as e:
+    print(f"openapi: not JSON ({e})", file=sys.stderr)
+    sys.exit(1)
+title = (doc.get("info") or {}).get("title")
+if title != "Energlens API":
+    print(f"openapi: title is {title!r}, expected \"Energlens API\"", file=sys.stderr)
+    sys.exit(2)
+methods = (doc.get("paths") or {}).get("/users/me") or {}
+if "delete" not in methods:
+    keys = sorted(methods)
+    print(f"openapi: /users/me has {keys}, missing delete", file=sys.stderr)
+    sys.exit(3)
+' || py_rc=$?
+
+  case "$py_rc" in
+    0)
+      note "  openapi ok — title Energlens API, DELETE /users/me present"
+      return 0
+      ;;
+    2 | 3)
+      return "$py_rc"
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+# Stronger than preflight: waits until /health is green *and* OpenAPI shows the
+# public contract that would have caught issue #48. Used after backend merges
+# (Render deploys out-of-band) and on a daily cron. Raise ATTEMPTS/INTERVAL via
+# the env knobs above when waiting on a free-tier build.
+cmd_smoke() {
+  resolve_url "$@"
+
+  have curl || die "error: no curl on PATH.
+     Fix: brew install curl   (every GitHub Actions runner has it preinstalled)"
+
+  probe="$url/health"
+  n=1
+  last_health=down
+  last_openapi=pending
+  while :; do
+    rc=0
+    out="$(curl -sS --connect-timeout "$CONNECT_TIMEOUT" --max-time "$TIMEOUT" \
+      -w '|HTTP:%{http_code}' "$probe" 2>&1)" || rc=$?
+    code="${out##*|HTTP:}"
+    body="${out%|HTTP:*}"
+
+    if [ "$code" = "200" ] && [ "$(squeeze "$body")" = '{"status":"ok"}' ]; then
+      last_health=ok
+      note "  API_URL ok — $probe served {\"status\":\"ok\"} (attempt $n/$ATTEMPTS)"
+      check_db
+      if check_openapi_contract; then
+        last_openapi=ok
+        return 0
+      fi
+      last_openapi=stale
+    else
+      last_health=down
+      last_openapi=pending
+    fi
+
+    [ "$n" -lt "$ATTEMPTS" ] || break
+    say "  attempt $n/$ATTEMPTS: health=$last_health openapi=$last_openapi — retrying in ${INTERVAL}s"
+    n=$((n + 1))
+    sleep "$INTERVAL"
+  done
+
+  say ""
+  if [ "$last_health" = ok ] && [ "$last_openapi" = stale ]; then
+    summary="API_URL ($url) is up but OpenAPI is behind main after $ATTEMPTS attempts"
+    say "$summary."
+    say "A green /health with a stale OpenAPI is exactly issue #48 — the process"
+    say "is serving an older commit than main."
+    fix_stale
+    annotate error "$summary."
+    exit 1
+  fi
+
+  summary="API_URL ($url) did not serve {\"status\":\"ok\"} at /health after $ATTEMPTS attempts"
+  say "$summary."
+  say ""
+  diagnose
+  fix_url
+  annotate error "$summary. Last response: HTTP $code."
+  exit 1
+}
+
 case "${1:-preflight}" in
   preflight)
     [ "$#" -eq 0 ] || shift
     cmd_preflight "${1:-}"
+    ;;
+  smoke)
+    shift
+    cmd_smoke "${1:-}"
     ;;
   validate)
     shift
@@ -271,7 +402,8 @@ case "${1:-preflight}" in
     ;;
   -h | --help | help)
     say "usage: $0 preflight [url]   # shape + reachability"
+    say "       $0 smoke     [url]   # preflight + OpenAPI contract"
     say "       $0 validate  [url]   # shape only, no network"
     ;;
-  *) die "usage: $0 [preflight|validate] [url]" ;;
+  *) die "usage: $0 [preflight|smoke|validate] [url]" ;;
 esac

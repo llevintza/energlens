@@ -10,6 +10,11 @@ services:
     # request, so a dashboard page issuing several sequential queries pays it
     # several times over. Move both together or not at all.
     region: ohio
+    # Explicit: omitting autoDeployTrigger leaves an *existing* service on
+    # whatever the dashboard already has (Render retains the current value).
+    # That is how backend/ landings on main could ship no redeploy (issue #48).
+    branch: main
+    autoDeployTrigger: commit
     rootDir: backend
     # --locked, not --frozen: --frozen installs the committed lock without
     # checking it still matches pyproject.toml, turning lockfile drift into a
