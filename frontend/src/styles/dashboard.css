@@ -770,3 +770,126 @@ table.line-items tr.line-total td {
     border-top: 1px solid var(--rule);
   }
 }
+
+/* ---------- 3g settings ---------- */
+
+.settings {
+  max-width: 720px;
+}
+
+.settings-section {
+  margin-top: 26px;
+}
+
+.settings-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin: 0 0 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--rule2);
+}
+
+.settings-row:last-child {
+  border-bottom: 0;
+}
+
+.settings-row-label {
+  font-size: 13.5px;
+  color: var(--ink);
+}
+
+.settings-row-desc {
+  font-size: 12.5px;
+  color: var(--ink3);
+  margin-top: 2px;
+  text-wrap: pretty;
+}
+
+.settings-row-control {
+  margin-left: auto;
+  flex: none;
+}
+
+.settings-inline {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.settings-inline input {
+  border: 1px solid var(--axis);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font: inherit;
+  font-size: 13.5px;
+  background: var(--field);
+  color: var(--ink);
+  min-width: 200px;
+}
+
+.settings-readonly {
+  font-size: 12.5px;
+  color: var(--ink3);
+}
+
+.settings-notice {
+  font-size: 13px;
+  color: var(--down);
+  margin: 12px 0 0;
+}
+
+.settings-failure {
+  font-size: 13px;
+  color: var(--up);
+  background: rgba(var(--up-rgb), 0.08);
+  border: 1px solid rgba(var(--up-rgb), 0.22);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin: 12px 0 0;
+}
+
+/* Behind its own rule, and last — an irreversible action should not sit next to a
+   reversible one. */
+.settings-danger {
+  margin-top: 34px;
+  border-top: 1px solid var(--rule);
+  padding-top: 6px;
+}
+
+.settings-danger .settings-row-label {
+  color: var(--up);
+}
+
+.btn.danger {
+  color: var(--up);
+  border-color: rgba(var(--up-rgb), 0.4);
+}
+
+@media (max-width: 899px) {
+  .settings-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .settings-row-control {
+    margin-left: 0;
+  }
+
+  .settings-inline input {
+    min-width: 0;
+    flex: 1;
+  }
+}
