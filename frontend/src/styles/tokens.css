@@ -1,0 +1,128 @@
+/* Design tokens — docs/design/README.md § "Design tokens", copied verbatim.
+ *
+ * One set of names, switched by `data-theme` on <html>. There is deliberately no
+ * `prefers-color-scheme` block here: SYSTEM is resolved in JS (theme/ThemeProvider.tsx
+ * and the pre-paint script in index.html) and written to the attribute, so there is
+ * exactly one place a colour can come from.
+ *
+ * Do not lighten the muted greys. Every text token was measured against the surface it
+ * is used on at the 10–11px sizes it is used at, and each clears WCAG AA (4.5:1):
+ *
+ *   --ink3 light #6f6d67 on #fcfcfb  5.0:1      --ink3 dark #8a8781 on #1a1a19  4.9:1
+ *   --ink4 light #74726b on #fcfcfb  4.7:1      --ink4 dark #96938c on #1a1a19  5.7:1
+ *   --warn-text light #96591a        5.5:1      --up light #b4471f              5.3:1
+ *   --down light #1f7a5a             5.1:1
+ *
+ * --amber is 3.2:1 and is a STROKE AND SWATCH COLOUR ONLY. Never put type on it; use
+ * --warn-text. Note also that 600-weight text under 18.66px is not WCAG "large text"
+ * (that needs 700), so the 19px/600 figures in 3f are held to the full 4.5:1.
+ */
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f9f9f7;
+  --panel: #fcfcfb;
+  --rail: #fcfcfb;
+  --topbar: #fcfcfb;
+
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --ink3: #6f6d67;
+  --ink4: #74726b;
+
+  --rule: rgba(11, 11, 11, 0.14);
+  --rule2: rgba(11, 11, 11, 0.09);
+
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+
+  --acc: #3d3ab0;
+  --acc-rgb: 61, 58, 176;
+  --acc2: #9b99d9;
+
+  --amber: #c47f1a;
+  --warn-text: #96591a;
+
+  --barfill: #d4d3cb;
+  --up: #b4471f;
+  --down: #1f7a5a;
+
+  --sel: #0b0b0b;
+  --selink: #fcfcfb;
+  --field: #fcfcfb;
+
+  /* Companions the handoff does not list, kept in sync by hand for the same reason
+     --acc-rgb exists: rgba() cannot take a hex custom property as its colour. */
+  --up-rgb: 180, 71, 31;
+  --hover: rgba(11, 11, 11, 0.04);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0d0d0d;
+  --panel: #1a1a19;
+  --rail: #111110;
+  --topbar: #141413;
+
+  --ink: #ffffff;
+  --ink2: #c3c2b7;
+  --ink3: #8a8781;
+  --ink4: #96938c;
+
+  --rule: rgba(255, 255, 255, 0.13);
+  --rule2: rgba(255, 255, 255, 0.08);
+
+  --grid: #2c2c2a;
+  --axis: #383835;
+
+  --acc: #8f8cf0;
+  --acc-rgb: 143, 140, 240;
+  --acc2: #5b58a8;
+
+  --amber: #e6a23c;
+  --warn-text: #e6a23c;
+
+  --barfill: #3f3f3c;
+  --up: #e07a4c;
+  --down: #4fb48c;
+
+  --sel: #8f8cf0;
+  --selink: #0d0d0d;
+  --field: #0d0d0d;
+
+  --up-rgb: 224, 122, 76;
+  --hover: rgba(255, 255, 255, 0.04);
+}
+
+/* Multi-place series colours. The handoff names roles (--acc, --amber, …) rather than
+   an indexed ramp, because every chart it specifies plots named things. The
+   place-vs-place compare chart is the one that needs N arbitrary colours, so it gets
+   this alias set drawn from the same palette instead of a second vocabulary. */
+[data-theme='light'],
+[data-theme='dark'] {
+  --series-1: var(--acc);
+  --series-2: var(--amber);
+  --series-3: var(--down);
+  --series-4: var(--acc2);
+}
+
+/* Type. Prose and UI are system Helvetica — no webfont. Every figure, axis tick and
+   small uppercase label is IBM Plex Mono; see index.html for the font link. */
+:root {
+  --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  /* Stacking order, declared once. The handoff calls out a live bug in the prototype:
+     a full-viewport dismissal scrim sitting *above* 2b's metric tiles swallowed the
+     first click on a tile, so selecting a metric did nothing. The ordering below is
+     what stops that, and styles/layers.test.ts fails if it is ever inverted. */
+  --layer-rail: 5;
+  --layer-topbar: 10;
+  --layer-scrim: 19;
+  --layer-popover: 20;
+  --layer-tiles: 21;
+  --layer-drawer-scrim: 39;
+  --layer-drawer: 40;
+}

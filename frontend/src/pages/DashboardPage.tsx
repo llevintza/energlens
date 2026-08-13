@@ -6,7 +6,7 @@ import { useCompare, usePlaces } from '../api/hooks'
 import type { Granularity } from '../api/types'
 import { CompareChart } from '../components/charts/CompareChart'
 import { PlaceCharts, SummaryTiles } from '../components/charts/PlaceCharts'
-import { MAX_COMPARE_SERIES } from '../components/charts/tokens'
+import { MAX_COMPARE_SERIES } from '../components/charts/chartTheme'
 import { QueryError } from '../components/QueryError'
 import { fmtNumber } from '../lib/format'
 

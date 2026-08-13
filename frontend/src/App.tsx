@@ -11,13 +11,14 @@ import { AuthProvider } from './auth/AuthContext'
 import { OAuthCallbackPage } from './auth/OAuthCallbackPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
-import { Layout } from './components/Layout'
+import { AppShell } from './components/shell/AppShell'
 import { DashboardPage } from './pages/DashboardPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceDetailPage } from './pages/PlaceDetailPage'
 import { PlacesPage } from './pages/PlacesPage'
 import { RegisterPage } from './pages/RegisterPage'
+import { ThemeProvider } from './theme/ThemeProvider'
 
 // Where error handling lives, decided once so the app does not grow three
 // variants of it: every user-facing word comes from `<QueryError>`, rendered
@@ -63,36 +64,38 @@ const queryClient = new QueryClient({
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Outermost net. Anything thrown by the router, the auth provider or a
-          page that the inner boundary in Layout does not cover lands here —
-          without it, a render throw leaves an empty #root and no message. */}
-      <ErrorBoundary>
-        <BrowserRouter basename={import.meta.env.BASE_URL}>
-          <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/auth/callback" element={<OAuthCallbackPage />} />
-              <Route element={<ProtectedRoute />}>
-                <Route element={<Layout />}>
-                  <Route path="/" element={<DashboardPage />} />
-                  <Route path="/places" element={<PlacesPage />} />
-                  <Route
-                    path="/places/:placeId"
-                    element={<PlaceDetailPage />}
-                  />
+      <ThemeProvider>
+        {/* Outermost net. Anything thrown by the router, the auth provider or a
+            page that the inner boundary in AppShell does not cover lands here —
+            without it, a render throw leaves an empty #root and no message. */}
+        <ErrorBoundary>
+          <BrowserRouter basename={import.meta.env.BASE_URL}>
+            <AuthProvider>
+              <Routes>
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/auth/callback" element={<OAuthCallbackPage />} />
+                <Route element={<ProtectedRoute />}>
+                  <Route element={<AppShell />}>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/places" element={<PlacesPage />} />
+                    <Route
+                      path="/places/:placeId"
+                      element={<PlaceDetailPage />}
+                    />
+                  </Route>
                 </Route>
-              </Route>
-              {/* GitHub Pages serves 404.html for unknown paths, so a mistyped
-                  deep link lands here rather than 404ing at the CDN. Render a
-                  page instead of redirecting: a redirect would erase the bad
-                  URL from the address bar and the back stack, leaving the
-                  visitor on the dashboard with no idea the link was wrong. */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </ErrorBoundary>
+                {/* GitHub Pages serves 404.html for unknown paths, so a mistyped
+                    deep link lands here rather than 404ing at the CDN. Render a
+                    page instead of redirecting: a redirect would erase the bad
+                    URL from the address bar and the back stack, leaving the
+                    visitor on the dashboard with no idea the link was wrong. */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </ErrorBoundary>
+      </ThemeProvider>
     </QueryClientProvider>
   )
 }

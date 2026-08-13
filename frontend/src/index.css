@@ -1,48 +1,9 @@
-:root {
-  color-scheme: light;
-  /* chart + chrome tokens (reference dataviz palette) */
-  --surface-1: #fcfcfb;
-  --page: #f9f9f7;
-  --text-primary: #0b0b0b;
-  --text-secondary: #52514e;
-  --muted-ink: #898781;
-  --gridline: #e1e0d9;
-  --baseline: #c3c2b7;
-  --hairline: rgba(11, 11, 11, 0.1);
-  --series-1: #2a78d6;
-  --series-2: #eb6834;
-  --series-3: #1baf7a;
-  --series-4: #eda100;
-  --accent: #2a78d6;
-  --accent-ink: #ffffff;
-  --danger: #d03b3b;
-  /* Companion to --danger, for tinted backgrounds. Kept in sync by hand:
-     rgba() cannot take a hex custom property as its colour. */
-  --danger-rgb: 208, 59, 59;
-  --good-text: #006300;
-}
+@import './styles/tokens.css';
+@import './styles/shell.css';
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    color-scheme: dark;
-    --surface-1: #1a1a19;
-    --page: #0d0d0d;
-    --text-primary: #ffffff;
-    --text-secondary: #c3c2b7;
-    --muted-ink: #898781;
-    --gridline: #2c2c2a;
-    --baseline: #383835;
-    --hairline: rgba(255, 255, 255, 0.1);
-    --series-1: #3987e5;
-    --series-2: #d95926;
-    --series-3: #199e70;
-    --series-4: #c98500;
-    --accent: #3987e5;
-    --danger: #d03b3b;
-    --danger-rgb: 208, 59, 59;
-    --good-text: #0ca30c;
-  }
-}
+/* Everything below is the pre-redesign class vocabulary. It is repointed at the new
+   token names so the screens the redesign has not reached yet keep rendering — each
+   screen issue deletes the classes it stops using. */
 
 * {
   box-sizing: border-box;
@@ -50,15 +11,24 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--page);
-  color: var(--text-primary);
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--ink);
   font-size: 15px;
   line-height: 1.5;
 }
 
+/* Every numeric run in the app, per the handoff. Applied here rather than per-rule so
+   a new figure cannot forget it and end up with wobbling column alignment. */
+.mono,
+.num,
+.tile-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
 a {
-  color: var(--accent);
+  color: var(--acc);
   text-decoration: none;
 }
 
@@ -69,25 +39,25 @@ a {
   align-items: center;
   gap: 20px;
   padding: 10px 24px;
-  background: var(--surface-1);
-  border-bottom: 1px solid var(--hairline);
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
 }
 
 .topnav .brand {
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-right: 8px;
 }
 
 .topnav a.navlink {
-  color: var(--text-secondary);
+  color: var(--ink2);
   padding: 4px 8px;
   border-radius: 6px;
 }
 
 .topnav a.navlink.active {
-  color: var(--text-primary);
-  background: var(--hairline);
+  color: var(--ink);
+  background: var(--rule);
 }
 
 .topnav .spacer {
@@ -95,7 +65,7 @@ a {
 }
 
 .topnav .who {
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-size: 13px;
 }
 
@@ -119,15 +89,15 @@ a {
 }
 
 .page-title .sub {
-  color: var(--text-secondary);
+  color: var(--ink2);
   font-size: 14px;
 }
 
 /* ---------- cards, tiles ---------- */
 
 .card {
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--panel);
+  border: 1px solid var(--rule);
   border-radius: 10px;
   padding: 16px;
 }
@@ -143,7 +113,7 @@ a {
 }
 
 .card .card-sub {
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-size: 12.5px;
   margin: -6px 0 10px;
 }
@@ -156,15 +126,15 @@ a {
 }
 
 .tile {
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--panel);
+  border: 1px solid var(--rule);
   border-radius: 10px;
   padding: 12px 16px;
 }
 
 .tile .tile-label {
   font-size: 12.5px;
-  color: var(--text-secondary);
+  color: var(--ink2);
 }
 
 .tile .tile-value {
@@ -175,7 +145,7 @@ a {
 
 .tile .tile-note {
   font-size: 12px;
-  color: var(--muted-ink);
+  color: var(--ink3);
 }
 
 .chart-grid {
@@ -195,21 +165,21 @@ a {
 
 .filter-row .filter-label {
   font-size: 12.5px;
-  color: var(--muted-ink);
+  color: var(--ink3);
 }
 
 .seg {
   display: inline-flex;
-  border: 1px solid var(--hairline);
+  border: 1px solid var(--rule);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--surface-1);
+  background: var(--panel);
 }
 
 .seg button {
   border: 0;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--ink2);
   padding: 5px 12px;
   font: inherit;
   font-size: 13.5px;
@@ -217,19 +187,19 @@ a {
 }
 
 .seg button + button {
-  border-left: 1px solid var(--hairline);
+  border-left: 1px solid var(--rule);
 }
 
 .seg button.on {
-  background: var(--accent);
-  color: var(--accent-ink);
+  background: var(--acc);
+  color: var(--selink);
 }
 
 .btn {
   display: inline-block;
-  border: 1px solid var(--hairline);
-  background: var(--surface-1);
-  color: var(--text-primary);
+  border: 1px solid var(--rule);
+  background: var(--panel);
+  color: var(--ink);
   border-radius: 8px;
   padding: 7px 14px;
   font: inherit;
@@ -239,17 +209,17 @@ a {
 }
 
 .btn:hover {
-  border-color: var(--baseline);
+  border-color: var(--axis);
 }
 
 .btn.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-ink);
+  background: var(--acc);
+  border-color: var(--acc);
+  color: var(--selink);
 }
 
 .btn.danger {
-  color: var(--danger);
+  color: var(--up);
 }
 
 .btn.small {
@@ -278,31 +248,31 @@ button:disabled {
 
 .field label {
   font-size: 12.5px;
-  color: var(--text-secondary);
+  color: var(--ink2);
 }
 
 .field input,
 .field select,
 .field textarea {
-  border: 1px solid var(--baseline);
+  border: 1px solid var(--axis);
   border-radius: 8px;
   padding: 7px 10px;
   font: inherit;
   font-size: 14px;
-  background: var(--surface-1);
-  color: var(--text-primary);
+  background: var(--panel);
+  color: var(--ink);
 }
 
 .field input:focus,
 .field select:focus,
 .field textarea:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--acc);
   outline-offset: -1px;
-  border-color: var(--accent);
+  border-color: var(--acc);
 }
 
 .field .err {
-  color: var(--danger);
+  color: var(--up);
   font-size: 12.5px;
 }
 
@@ -314,13 +284,13 @@ button:disabled {
 }
 
 .form-warn {
-  color: var(--series-2);
+  color: var(--warn-text);
   font-size: 13px;
   margin-top: 10px;
 }
 
 .form-error {
-  color: var(--danger);
+  color: var(--up);
   font-size: 13.5px;
   margin-top: 10px;
 }
@@ -337,8 +307,8 @@ button:disabled {
 .auth-card {
   width: 100%;
   max-width: 380px;
-  background: var(--surface-1);
-  border: 1px solid var(--hairline);
+  background: var(--panel);
+  border: 1px solid var(--rule);
   border-radius: 12px;
   padding: 28px;
 }
@@ -349,7 +319,7 @@ button:disabled {
 }
 
 .auth-card .auth-sub {
-  color: var(--text-secondary);
+  color: var(--ink2);
   font-size: 14px;
   margin-bottom: 18px;
 }
@@ -367,7 +337,7 @@ button:disabled {
 .auth-alt {
   margin-top: 16px;
   font-size: 13.5px;
-  color: var(--text-secondary);
+  color: var(--ink2);
   text-align: center;
 }
 
@@ -385,7 +355,7 @@ button:disabled {
   display: flex;
   align-items: center;
   gap: 10px;
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-size: 12px;
   margin-top: 16px;
 }
@@ -394,7 +364,7 @@ button:disabled {
 .auth-divider::after {
   content: '';
   flex: 1;
-  border-top: 1px solid var(--hairline);
+  border-top: 1px solid var(--rule);
 }
 
 /* ---------- tables ---------- */
@@ -411,17 +381,17 @@ table.data {
 
 table.data th {
   text-align: left;
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-weight: 500;
   font-size: 12.5px;
   padding: 6px 10px;
-  border-bottom: 1px solid var(--gridline);
+  border-bottom: 1px solid var(--grid);
   white-space: nowrap;
 }
 
 table.data td {
   padding: 7px 10px;
-  border-bottom: 1px solid var(--gridline);
+  border-bottom: 1px solid var(--grid);
   white-space: nowrap;
 }
 
@@ -448,13 +418,13 @@ table.data th.num {
 }
 
 .place-card .addr {
-  color: var(--text-secondary);
+  color: var(--ink2);
   font-size: 13.5px;
   white-space: pre-line;
 }
 
 .place-card .meta {
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-size: 12.5px;
   margin-top: 8px;
 }
@@ -466,13 +436,13 @@ table.data th.num {
 }
 
 .empty {
-  color: var(--text-secondary);
+  color: var(--ink2);
   padding: 32px;
   text-align: center;
 }
 
 .note {
-  color: var(--muted-ink);
+  color: var(--ink3);
   font-size: 12.5px;
 }
 
@@ -481,21 +451,21 @@ table.data th.num {
 /* Inline, next to whatever failed — never a modal, and never dressed up as an
    empty state. Sized to sit either in a page body or inside a card. */
 .query-error {
-  background: rgba(var(--danger-rgb), 0.08);
-  border: 1px solid rgba(var(--danger-rgb), 0.22);
+  background: rgba(var(--up-rgb), 0.08);
+  border: 1px solid rgba(var(--up-rgb), 0.22);
   border-radius: 8px;
   padding: 16px;
   text-align: left;
 }
 
 .query-error .query-error-title {
-  color: var(--danger);
+  color: var(--up);
   font-size: 14px;
   font-weight: 600;
 }
 
 .query-error .query-error-detail {
-  color: var(--text-secondary);
+  color: var(--ink2);
   font-size: 13.5px;
   margin-top: 4px;
 }

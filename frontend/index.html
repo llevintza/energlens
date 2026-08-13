@@ -5,6 +5,57 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Energlens</title>
+
+    <!-- Prose and UI are system Helvetica. IBM Plex Mono carries every figure, axis
+         tick and small uppercase label — 400/500/600 are the only weights used. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+    />
+
+    <!--
+      Resolve the theme before first paint. Without this a dark-mode user gets a white
+      flash on every load, because the bundle only runs after the browser has already
+      painted the document background.
+
+      This duplicates the resolution in src/theme/ThemeProvider.tsx by necessity — it
+      has to run before any module can. Keep the storage key and the three states in
+      step with that file; it re-asserts the attribute on mount, so a divergence shows
+      up as a flash rather than a wrong theme.
+    -->
+    <script>
+      ;(function () {
+        try {
+          var choice = localStorage.getItem('energlens-theme') || 'system'
+          var resolved =
+            choice === 'system'
+              ? window.matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+              : choice
+          document.documentElement.dataset.theme = resolved
+        } catch (e) {
+          /* Storage can throw in private mode or with cookies blocked. A readable
+             light theme is a better failure than an unstyled document. */
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
+
+    <!--
+      Dev-only backstop. In production the stylesheet is a <link> in <head>, so the
+      attribute above is enough. Vite's dev server injects CSS through JS, so the
+      background stays unstyled until the bundle runs and a dark-mode developer sees
+      the white flash this is all meant to prevent — on every reload. One declaration
+      keeps dev honest about what production does.
+    -->
+    <style>
+      html[data-theme='dark'] {
+        background: #0d0d0d;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

@@ -14,7 +14,7 @@ import type { SeriesPoint } from '../../api/types'
 import { fmtPeriodTick } from '../../lib/format'
 import { makeTooltip } from './ChartTooltip'
 import { monthRows } from './fill'
-import { useChartTokens } from './tokens'
+import { useChartTokens } from './chartTheme'
 
 interface Props {
   points: SeriesPoint[]
@@ -45,17 +45,17 @@ export function SeriesChart({
   }
 
   const axisProps = {
-    tick: { fill: tokens.muted, fontSize: 12 },
+    tick: { fill: tokens.ink4, fontSize: 12 },
     tickLine: false,
-    axisLine: { stroke: tokens.baseline },
+    axisLine: { stroke: tokens.axis },
   }
   const tooltip = (
     <Tooltip
       content={makeTooltip(tokens, formatValue)}
       cursor={
         kind === 'bar'
-          ? { fill: tokens.border }
-          : { stroke: tokens.baseline, strokeWidth: 1 }
+          ? { fill: tokens.rule }
+          : { stroke: tokens.axis, strokeWidth: 1 }
       }
     />
   )
@@ -86,7 +86,7 @@ export function SeriesChart({
             stroke={stroke}
             strokeWidth={2}
             connectNulls={false}
-            dot={{ r: 3, fill: stroke, stroke: tokens.surface, strokeWidth: 2 }}
+            dot={{ r: 3, fill: stroke, stroke: tokens.panel, strokeWidth: 2 }}
             activeDot={{ r: 5 }}
           />
         </LineChart>
