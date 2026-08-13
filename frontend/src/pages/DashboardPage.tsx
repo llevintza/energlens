@@ -338,7 +338,11 @@ export function DashboardPage() {
                 const period = `${bill.periodEnd.getFullYear()}-${String(bill.periodEnd.getMonth() + 1).padStart(2, '0')}`
                 return (
                   <tr key={bill.id}>
-                    <td data-label="Period">{fmtPeriod(period)}</td>
+                    <td data-label="Period">
+                      <Link to={`/places/${placeId}/bills/${bill.id}`}>
+                        {fmtPeriod(period)}
+                      </Link>
+                    </td>
                     <td className="num" data-label="kWh">
                       {fmtNumber(bill.consumption, 1)}
                     </td>

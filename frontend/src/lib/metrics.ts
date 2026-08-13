@@ -684,3 +684,94 @@ export function tariffShape(bills: ParsedBill[]): TariffShape {
     latestUnitPrice: rate.latest,
   }
 }
+
+/** One cell of 3f's 2×2 comparison grid. */
+export interface BillComparison {
+  /** What it is measured against — a period, or a label like "12-month average". Null
+   *  when no counterpart exists. */
+  against: string | null
+  /** The counterpart's value, so the reader can see what the percentage is *of*. */
+  againstValue: number | null
+  delta: Delta
+}
+
+export interface BillComparisons {
+  previousMonth: BillComparison
+  sameMonthLastYear: BillComparison
+  twelveMonthAverage: BillComparison
+  cheapestMonth: BillComparison
+}
+
+const NO_COMPARISON: BillComparison = {
+  against: null,
+  againstValue: null,
+  delta: { abs: null, pct: null },
+}
+
+/**
+ * Where one month sits against the run of everything else.
+ *
+ * Every cell distinguishes **"no counterpart"** from **"no change"**. The first bill in
+ * an account has no previous month and no year-ago twin, and rendering either as 0%
+ * would be a claim the data does not support.
+ *
+ * "Cheapest" is by **effective price**, not by total: a cheap month with low usage is
+ * not a cheap rate, and confusing the two is the misreading this whole redesign exists
+ * to correct.
+ */
+export function billComparisons(
+  buckets: MonthBucket[],
+  period: string,
+): BillComparisons {
+  const index = buckets.findIndex((b) => b.period === period)
+  if (index < 0) {
+    return {
+      previousMonth: NO_COMPARISON,
+      sameMonthLastYear: NO_COMPARISON,
+      twelveMonthAverage: NO_COMPARISON,
+      cheapestMonth: NO_COMPARISON,
+    }
+  }
+  const current = buckets[index]
+  const value = current.effective
+
+  const against = (other: MonthBucket | undefined, label?: string): BillComparison =>
+    !other || other.effective === null || value === null
+      ? NO_COMPARISON
+      : {
+          against: label ?? other.period,
+          againstValue: other.effective,
+          delta: delta(other.effective, value),
+        }
+
+  const previous = index > 0 ? buckets[index - 1] : undefined
+  const yearAgo = buckets.find((b) => b.period === periodKey(current.year - 1, current.month))
+
+  /* The twelve months before this one, not the twelve around it — an average that
+     includes the month being judged is partly a comparison with itself. */
+  const window = buckets.slice(Math.max(0, index - 12), index).filter((b) => b.effective !== null)
+  const averageValue =
+    window.length === 0
+      ? null
+      : window.reduce((sum, b) => sum + (b.effective ?? 0), 0) / window.length
+
+  const priced = buckets.filter((b) => b.effective !== null && b.period !== period)
+  const cheapest = priced.reduce<MonthBucket | undefined>(
+    (best, b) => (!best || (b.effective ?? 0) < (best.effective ?? 0) ? b : best),
+    undefined,
+  )
+
+  return {
+    previousMonth: against(previous),
+    sameMonthLastYear: against(yearAgo),
+    twelveMonthAverage:
+      averageValue === null || value === null
+        ? NO_COMPARISON
+        : {
+            against: `${window.length}-month average`,
+            againstValue: round(averageValue, 4),
+            delta: delta(averageValue, value),
+          },
+    cheapestMonth: against(cheapest),
+  }
+}
