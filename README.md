@@ -318,11 +318,14 @@ at nothing.
   published site does not load, the badges above go red, and `scripts/ci-alert.sh`
   files an issue that closes itself on the next green run. `Pages smoke test`
   re-checks the live site daily, which is what catches the *frontend* half of the
-  build-time-config drift described above — the backend half is `make api-preflight`.
-  See [ADR-0017](docs/adr/0017-verify-the-pages-deploy.md).
+  build-time-config drift described above — the backend half is `make api-smoke`
+  / `api-smoke.yml` (OpenAPI contract, not only `/health`). See
+  [ADR-0017](docs/adr/0017-verify-the-pages-deploy.md) and
+  [ADR-0019](docs/adr/0019-verify-the-api-deploy.md).
 
 - **Backend — Render free web service** via `render.yaml` (Blueprint → point it
-  at this repo). Paste the Neon `DATABASE_URL` in the dashboard. `CORS_ORIGINS`
+  at this repo, branch `main`, `autoDeployTrigger: commit`). Paste the Neon
+  `DATABASE_URL` in the dashboard. `CORS_ORIGINS`
   and `FRONTEND_URL` are pinned to this repo's Pages origin and do **not**
   follow the frontend's base path — edit both if you fork, rename, or add a
   domain, or the browser will block every API call. `backend/start.sh` runs
@@ -330,6 +333,10 @@ at nothing.
   boot — both idempotent. Free services sleep after 15 min idle, so the first
   request back takes 30–60s; `plan: starter` ($7/mo) makes it always-on with no
   other change.
+
+  After a `backend/` merge, `api-smoke.yml` polls the live host until OpenAPI
+  shows the expected surface (`make api-smoke` locally). A green `/health` on a
+  stale revision is not enough — that was issue #48.
 
   Note that `SEED_DEMO=true` creates a shared account with credentials
   committed to this repo, and the authenticated API allows writes — anyone who
@@ -356,7 +363,7 @@ backend/    FastAPI app (app/), Alembic migrations, pytest suite
 frontend/   Vite + React SPA (src/api, src/auth, src/pages, src/components)
 ingest/     energlens-ingest CLI (Claude PDF extraction → API upload)
 scripts/    db.sh + pgdev.sh — local Postgres without Docker
-            api.sh — preflight for the *deployed* API (make api-preflight)
+            api.sh — preflight / smoke for the *deployed* API (make api-preflight, make api-smoke)
 ```
 
 Design notes worth knowing:

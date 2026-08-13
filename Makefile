@@ -40,7 +40,7 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
         migrate migration migrate-check lock-check seed dev-api dev-web \
         typecheck build-web \
         test test-backend test-ingest test-frontend \
-        check ci-backend ci-frontend api-preflight smoke-web clean
+        check ci-backend ci-frontend api-preflight api-smoke smoke-web clean
 
 help: ## Show this help
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -175,6 +175,15 @@ ci-frontend: test-frontend build-web
 #   make api-preflight API_URL=http://localhost:8000     # against `make dev-api`
 api-preflight: ## Assert an Energlens API answers at API_URL (default: the repo variable)
 	@API_URL="$(API_URL)" $(API) preflight
+
+# Stronger than api-preflight: also asserts OpenAPI identity and that
+# DELETE /users/me is present — the check that catches "API up, revision stale"
+# (issue #48). Outside `make check` for the same reason as api-preflight.
+#
+#   make api-smoke
+#   make api-smoke API_URL=https://energlens-api.onrender.com
+api-smoke: ## Assert the deployed API's OpenAPI contract (default: the repo variable)
+	@API_URL="$(API_URL)" $(API) smoke
 
 # The other half: api-preflight checks what the *next* deploy would bake in,
 # this checks what the *last* one actually published. Outside `make check` for

@@ -1,0 +1,56 @@
+name: API smoke test
+
+# Render deploys the API out-of-band (Blueprint auto-deploy), so there is no
+# deploy job here to hang a smoke step on the way Pages does. This workflow is
+# the whole detector: after a backend landing on main, and once a day for drift
+# when nothing under backend/** changed.
+#
+# /health alone is not enough — issue #48 was a green health check on a stale
+# commit. scripts/api.sh smoke asserts the OpenAPI contract too.
+on:
+  push:
+    branches: [main]
+    paths: ["backend/**", "render.yaml", ".github/workflows/api-smoke.yml", "scripts/api.sh"]
+  schedule:
+    # 06:47 UTC. Off the hour (and offset from pages-smoke's 06:17) so both are
+    # less likely to be dropped together when the top-of-hour queue congests.
+    - cron: "47 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: api-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      # Free-tier builds routinely take several minutes; cold start another 30-60s.
+      # 24 x 45s + 30s curl = ~20 min wall, enough to outlast a stuck-looking build
+      # without treating a permanently stale API as "still deploying".
+      - name: Smoke the live API
+        timeout-minutes: 25
+        env:
+          API_URL: ${{ vars.API_URL }}
+          API_PREFLIGHT_ATTEMPTS: "24"
+          API_PREFLIGHT_INTERVAL: "45"
+        run: scripts/api.sh smoke
+
+  alert:
+    needs: [smoke]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/ci-alert.sh api-smoke \
+            "${{ join(needs.*.result, ' ') }}" \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
