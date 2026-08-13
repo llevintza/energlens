@@ -114,15 +114,4 @@
   --font-ui: 'Helvetica Neue', Helvetica, Arial, sans-serif;
   --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  /* Stacking order, declared once. The handoff calls out a live bug in the prototype:
-     a full-viewport dismissal scrim sitting *above* 2b's metric tiles swallowed the
-     first click on a tile, so selecting a metric did nothing. The ordering below is
-     what stops that, and styles/layers.test.ts fails if it is ever inverted. */
-  --layer-rail: 5;
-  --layer-topbar: 10;
-  --layer-scrim: 19;
-  --layer-popover: 20;
-  --layer-tiles: 21;
-  --layer-drawer-scrim: 39;
-  --layer-drawer: 40;
 }

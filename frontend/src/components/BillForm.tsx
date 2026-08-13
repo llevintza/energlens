@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 
+import { ArithmeticCheck } from './places/ArithmeticCheck'
+
 import { ApiError } from '../api/client'
 import type { Bill, BillInput } from '../api/types'
-import { fmtCurrency } from '../lib/format'
 
 interface Props {
   currency: string
@@ -45,22 +46,10 @@ export function BillForm({ currency, initial, onSubmit, onCancel }: Props) {
     },
   })
 
-  // Soft consistency check — warn, never block: bills routinely include
-  // rounding and adjustments the components don't fully explain.
+  /* The arithmetic panel recomputes as you type. It reports; it never blocks — real
+     bills carry adjustments, credits and rounded unit prices, and a form that refuses
+     them is worse than one that flags them. */
   const values = watch()
-  let warning: string | null = null
-  const kwh = parseFloat(values.consumption)
-  const price = parseFloat(values.unit_price)
-  const total = parseFloat(values.total_amount)
-  if (!Number.isNaN(kwh) && !Number.isNaN(price) && !Number.isNaN(total) && total !== 0) {
-    const expected =
-      kwh * price +
-      (parseFloat(values.fixed_charges) || 0) +
-      (parseFloat(values.taxes) || 0)
-    if (Math.abs(expected - total) / Math.abs(total) > 0.05) {
-      warning = `Heads up: consumption × price + charges ≈ ${fmtCurrency(expected, currency)}, but total is ${fmtCurrency(total, currency)}`
-    }
-  }
 
   const submit = async (v: FormValues) => {
     setError(null)
@@ -153,7 +142,14 @@ export function BillForm({ currency, initial, onSubmit, onCancel }: Props) {
           <input {...register('notes')} />
         </div>
       </div>
-      {warning && <div className="form-warn">{warning}</div>}
+      <ArithmeticCheck
+        consumption={values.consumption}
+        unitPrice={values.unit_price}
+        fixedCharges={values.fixed_charges}
+        taxes={values.taxes}
+        total={values.total_amount}
+        currency={currency}
+      />
       {error && <div className="form-error">{error}</div>}
       <div className="form-actions">
         <button className="btn primary" disabled={isSubmitting}>

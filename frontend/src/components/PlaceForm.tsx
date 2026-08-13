@@ -10,11 +10,14 @@ interface Props {
   onSubmit: (data: PlaceInput) => Promise<unknown>
   onCancel?: () => void
   submitLabel?: string
+  /** Bills already denominated in this place's currency. Drives the warning below;
+   *  omitted when creating, where there is nothing to strand. */
+  billCount?: number
 }
 
 type FormValues = PlaceInput
 
-export function PlaceForm({ initial, onSubmit, onCancel, submitLabel }: Props) {
+export function PlaceForm({ initial, onSubmit, onCancel, submitLabel, billCount }: Props) {
   const [error, setError] = useState<string | null>(null)
   const {
     register,
@@ -114,6 +117,16 @@ export function PlaceForm({ initial, onSubmit, onCancel, submitLabel }: Props) {
               </option>
             ))}
           </select>
+          {/* Accurate as written: bills snapshot the place's currency when they are
+              created (backend/app/routers/bills.py), so changing it here never rewrites
+              history — it strands what is already recorded. */}
+          {billCount !== undefined && billCount > 0 && (
+            <span className="field-warn">
+              Set once, at the start. Changing it later leaves {billCount}{' '}
+              {billCount === 1 ? 'existing bill' : 'existing bills'} denominated in{' '}
+              {initial?.currency_code ?? 'the old currency'}.
+            </span>
+          )}
         </div>
       </div>
       {error && <div className="form-error">{error}</div>}

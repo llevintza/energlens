@@ -1,11 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
-import { useBills, usePlace } from '../api/hooks'
+import { useBills, useCreateBill, usePlace } from '../api/hooks'
 import { ChartFrame, chartStatus } from '../components/charts/ChartFrame'
 import { HeroPriceUse } from '../components/charts/HeroPriceUse'
 import { RateEvidence } from '../components/charts/RateEvidence'
+import { BillForm } from '../components/BillForm'
 import { QueryError } from '../components/QueryError'
+import { Drawer } from '../components/ui/Drawer'
 import { DeltaChip } from '../components/ui/DeltaChip'
 import { Segmented } from '../components/ui/Segmented'
 import { StatCell } from '../components/ui/StatCell'
@@ -63,9 +65,11 @@ export function DashboardPage() {
   const { placeId } = useParams()
   const place = usePlace(placeId)
   const bills = useBills(placeId)
+  const createBill = useCreateBill(placeId ?? '')
 
   const [range, setRange] = useState<RangeKey>('24m')
   const [granularity, setGranularity] = useState<Granularity>('month')
+  const [addingBill, setAddingBill] = useState(false)
 
   const parsed = useMemo(() => parseBills(bills.data ?? []), [bills.data])
   const allBuckets = useMemo(() => monthlyBuckets(parsed), [parsed])
@@ -238,9 +242,9 @@ export function DashboardPage() {
           emptyMessage="No bills yet — add one to see how price and consumption move."
           emptyAction={
             placeId && (
-              <Link className="btn small" to={`/places/${placeId}/manage`}>
+              <button type="button" className="btn small" onClick={() => setAddingBill(true)}>
                 Add bill
-              </Link>
+              </button>
             )
           }
         >
@@ -300,8 +304,11 @@ export function DashboardPage() {
         <div className="bills-head">
           <h2>Recent bills</h2>
           <div className="bills-head-actions">
-            <Link className="btn small" to={`/places/${placeId}/manage`}>
+            <button type="button" className="btn small" onClick={() => setAddingBill(true)}>
               Add bill
+            </button>
+            <Link className="btn small" to={`/places/${placeId}/manage`}>
+              All {parsed.length} bills →
             </Link>
           </div>
         </div>
@@ -363,6 +370,19 @@ export function DashboardPage() {
           </table>
         )}
       </section>
+
+      {/* 3d — a drawer over the page you were on, so adding a bill never loses the
+          dashboard you were reading. */}
+      <Drawer open={addingBill} onClose={() => setAddingBill(false)} title="Add bill">
+        <BillForm
+          currency={currency}
+          onCancel={() => setAddingBill(false)}
+          onSubmit={async (values) => {
+            await createBill.mutateAsync(values)
+            setAddingBill(false)
+          }}
+        />
+      </Drawer>
     </>
   )
 }

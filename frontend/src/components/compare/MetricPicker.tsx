@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react'
 
 import type { MetricDescriptor, MetricId } from '../../lib/compare'
 import { METRICS } from '../../lib/compare'
+import { LAYERS } from '../../styles/layers'
 
 interface Props {
   value: MetricId
@@ -63,7 +64,13 @@ export function MetricPicker({ value, onChange }: Props) {
       </button>
 
       {open && (
-        <ul className="metric-picker-list" id={listId} role="listbox" aria-label="Metric">
+        <ul
+          className="metric-picker-list"
+          style={{ zIndex: LAYERS.popover }}
+          id={listId}
+          role="listbox"
+          aria-label="Metric"
+        >
           {METRICS.map((metric) => (
             <li key={metric.id}>
               <button

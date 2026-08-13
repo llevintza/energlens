@@ -37,10 +37,10 @@ export function TopBar({ activePlaceId }: Props) {
       {/* The handoff's slot here reads "Import bills", but PDF import has no API to
           call — it is deferred to #24 along with the whole 3e screen. Rather than
           ship a button that does nothing, this is the one bill path that does exist
-          today: manual entry against the current place. #21 turns it into the
-          Add-bill drawer; #24 can then widen it back to import. */}
+          today: manual entry, via the Add-bill drawer on the place's dashboard.
+          #24 can widen it back to import once there is an endpoint. */}
       {activePlaceId && (
-        <Link className="btn small" to={`/places/${activePlaceId}/manage`}>
+        <Link className="btn small" to={`/places/${activePlaceId}`}>
           Add bill
         </Link>
       )}
