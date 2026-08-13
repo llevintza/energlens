@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-08-12
 - **Deciders:** llevintza
-- **Landed in:** PR #TBD (`TBD`)
+- **Landed in:** PR #34 (`e20693b`)
 - **Related:** [ADR-0010](0010-frontend-hosting-github-pages.md), [ADR-0011](0011-backend-hosting-render.md), [ADR-0014](0014-split-liveness-and-readiness-health-checks.md), issue #11, issue #13
 
 ## Context
