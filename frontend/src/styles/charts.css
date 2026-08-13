@@ -1,0 +1,90 @@
+/* Chart chrome: the four states every chart in the epic has to share.
+ * docs/design/README.md § "Interactions & behaviour". */
+
+.chart-frame {
+  min-width: 0;
+}
+
+.chart-frame-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.chart-frame-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.chart-frame-sub {
+  font-size: 12.5px;
+  color: var(--ink2);
+  flex: 1;
+  text-wrap: pretty;
+}
+
+/* Charts fade in over 240ms on FIRST PAINT ONLY. Recharts' own series animation is
+   deliberately switched off wherever this is used: it re-fires on every data change, so
+   2a's range control and 2b's mode switch would re-animate a chart the reader is already
+   looking at, which reads as a glitch rather than as an entrance. */
+.chart-frame-body {
+  animation: chart-in 240ms ease-out;
+}
+
+@keyframes chart-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chart-frame-body {
+    animation: none;
+  }
+}
+
+/* Loading. A skeleton at the chart's exact height, never a spinner — a spinner is
+   smaller than what it stands in for, so the page reflows when the data lands. */
+.skeleton {
+  background: linear-gradient(90deg, var(--rule2), var(--hover), var(--rule2));
+  background-size: 200% 100%;
+  border-radius: 6px;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+/* Empty. The section heading stays and the panel keeps the chart's height, so an empty
+   account looks like an account with nothing in it yet rather than a broken page. */
+.empty-panel {
+  border: 1px dashed var(--rule);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px;
+  text-align: center;
+  color: var(--ink3);
+  font-size: 13px;
+}
