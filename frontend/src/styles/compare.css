@@ -1,0 +1,300 @@
+/* 2b — Compare. docs/design/README.md § "The compare engine (2b)". */
+
+.compare-crumb {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink4);
+  text-decoration: none;
+  display: inline-block;
+  margin-bottom: 4px;
+}
+
+.compare-crumb:hover {
+  color: var(--acc);
+}
+
+/* The tile row is the small-multiples view: eight metrics, each drawn under the
+   currently selected mode. */
+.tile-strip {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 8px;
+}
+
+.metric-tile {
+  /* Above the popover, so a click on a tile is never intercepted. The picker uses no
+     scrim at all, but the ordering is declared and asserted either way. */
+  position: relative;
+  z-index: var(--layer-tiles);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  border: 1px solid var(--rule2);
+  border-radius: 8px;
+  background: transparent;
+  padding: 8px 10px;
+  cursor: pointer;
+  font: inherit;
+  color: var(--ink);
+  min-width: 0;
+  transition: background 120ms ease;
+}
+
+.metric-tile:hover {
+  background: var(--hover);
+}
+
+.metric-tile.selected {
+  border-color: var(--acc);
+  background: rgba(var(--acc-rgb), 0.07);
+}
+
+.metric-tile-short {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink4);
+}
+
+.metric-tile-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.metric-tile-mini {
+  display: block;
+  height: 40px;
+  margin-top: 4px;
+}
+
+/* Control row */
+
+.compare-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.compare-caption {
+  font-size: 12.5px;
+  color: var(--ink2);
+  margin: 10px 0 0;
+  text-wrap: pretty;
+}
+
+.metric-picker {
+  position: relative;
+}
+
+.metric-picker-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: var(--field);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.metric-picker-button:hover {
+  background: var(--hover);
+}
+
+.metric-picker-caret {
+  font-size: 9px;
+  color: var(--ink4);
+}
+
+.metric-picker-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: var(--layer-popover);
+  min-width: 220px;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(var(--acc-rgb), 0.16);
+}
+
+.metric-picker-list button {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13.5px;
+  padding: 6px 10px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.metric-picker-list button:hover {
+  background: var(--hover);
+}
+
+.metric-picker-list button.selected {
+  background: rgba(var(--acc-rgb), 0.09);
+  color: var(--acc);
+}
+
+.metric-picker-short {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--ink4);
+}
+
+/* Month and year chips */
+
+.month-chips,
+.year-chips {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.month-chips button,
+.year-chips button {
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ink2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 9px;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.month-chips button[aria-pressed='true'],
+.year-chips button[aria-pressed='true'] {
+  background: var(--sel);
+  border-color: var(--sel);
+  color: var(--selink);
+}
+
+.compare-legend {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink2);
+}
+
+.compare-legend i {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* Delta ribbon */
+
+.ribbon-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin: 0 0 10px;
+}
+
+.ribbon {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 6px;
+  align-items: end;
+}
+
+.ribbon-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ribbon-pct {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ribbon-pct.up {
+  color: var(--up);
+}
+
+.ribbon-pct.down {
+  color: var(--down);
+}
+
+.ribbon-pct.flat {
+  color: var(--ink4);
+}
+
+.ribbon-bar {
+  width: 100%;
+  border-radius: 2px;
+}
+
+.ribbon-month {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink4);
+}
+
+/* Responsive */
+
+@media (max-width: 1199px) {
+  .tile-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 899px) {
+  /* A horizontally scrolling strip rather than a wrapping grid: eight tiles stacked
+     two-wide would push the chart below the fold entirely. */
+  .tile-strip {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    padding-bottom: 4px;
+  }
+
+  .metric-tile {
+    flex: 0 0 132px;
+    scroll-snap-align: start;
+    min-height: 44px;
+  }
+
+  .ribbon {
+    grid-template-columns: repeat(6, 1fr);
+    row-gap: 12px;
+  }
+}
