@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-08-13
 - **Deciders:** llevintza
-- **Landed in:** (this PR)
+- **Landed in:** PR #66 (`c314070`)
 - **Related:** [ADR-0011](0011-backend-hosting-render.md),
   [ADR-0016](0016-verify-api-url-at-deploy-time.md),
   [ADR-0017](0017-verify-the-pages-deploy.md), issue #48
