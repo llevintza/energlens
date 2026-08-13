@@ -27,6 +27,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0015](0015-demo-seed-in-production.md) | Ship a public demo account | **Accepted (time-boxed)** | Security |
 | [0016](0016-verify-api-url-at-deploy-time.md) | Verify `API_URL` answers before building the frontend | Accepted | Ops |
 | [0017](0017-verify-the-pages-deploy.md) | Verify the Pages deploy, and route its failure to an issue | Accepted | Ops |
+| [0018](0018-frontend-testing-vitest-and-jsdom.md) | Frontend testing: Vitest for logic, jsdom for behaviour, a browser for layout | Accepted | Frontend |
 
 ## Status legend
 
