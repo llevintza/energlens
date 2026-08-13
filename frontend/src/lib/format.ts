@@ -1,7 +1,12 @@
+/* Decimals are fixed, not maximums: the handoff asks for €0.2886 in a column of
+   effective prices, and a "maximum" would render an exact €0.2500 as €0.25 and break
+   the alignment tabular-nums exists to hold. Callers pass the count the handoff
+   specifies — 0 for KPI totals and headlines, 2 in tables and bill figures, 4 for
+   effective price. */
 export function fmtCurrency(
   value: number | string | null | undefined,
   currency: string,
-  maximumFractionDigits = 2,
+  fractionDigits = 2,
 ): string {
   if (value === null || value === undefined) return '—'
   const n = typeof value === 'string' ? Number(value) : value
@@ -9,18 +14,41 @@ export function fmtCurrency(
   return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
-    maximumFractionDigits,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(n)
 }
 
 export function fmtNumber(
   value: number | string | null | undefined,
-  maximumFractionDigits = 1,
+  fractionDigits = 1,
 ): string {
   if (value === null || value === undefined) return '—'
   const n = typeof value === 'string' ? Number(value) : value
   if (Number.isNaN(n)) return '—'
-  return new Intl.NumberFormat(undefined, { maximumFractionDigits }).format(n)
+  return new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(n)
+}
+
+/**
+ * A signed percentage, one decimal, with a **true minus sign** (U+2212) rather than a
+ * hyphen — the handoff calls this out because a hyphen renders visibly shorter and
+ * higher than the plus it is meant to pair with, so a column of deltas looks ragged.
+ */
+export function fmtSignedPct(
+  value: number | null | undefined,
+  fractionDigits = 1,
+): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—'
+  const magnitude = new Intl.NumberFormat(undefined, {
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(Math.abs(value))
+  /* Signed on both sides: "+0.0%" and "−0.0%" both read as measured-and-flat, where a
+     bare "0.0%" reads as not-measured. */
+  return `${value < 0 ? '−' : '+'}${magnitude}%`
 }
 
 /** "2026-03" → "Mar 2026" */

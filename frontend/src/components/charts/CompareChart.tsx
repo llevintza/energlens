@@ -13,7 +13,7 @@ import type { CompareSeries } from '../../api/types'
 import { fmtPeriodTick } from '../../lib/format'
 import { makeTooltip } from './ChartTooltip'
 import { compareRows } from './fill'
-import { useChartTokens } from './tokens'
+import { useChartTokens } from './chartTheme'
 
 interface Props {
   series: CompareSeries[]
@@ -39,9 +39,9 @@ export function CompareChart({
   }
 
   const axisProps = {
-    tick: { fill: tokens.muted, fontSize: 12 },
+    tick: { fill: tokens.ink4, fontSize: 12 },
     tickLine: false,
-    axisLine: { stroke: tokens.baseline },
+    axisLine: { stroke: tokens.axis },
   }
 
   return (
@@ -52,12 +52,12 @@ export function CompareChart({
         <YAxis width={44} {...axisProps} axisLine={false} />
         <Tooltip
           content={makeTooltip(tokens, formatValue)}
-          cursor={{ stroke: tokens.baseline, strokeWidth: 1 }}
+          cursor={{ stroke: tokens.axis, strokeWidth: 1 }}
         />
         <Legend
           iconType="circle"
           iconSize={8}
-          wrapperStyle={{ fontSize: 13, color: tokens.inkSecondary }}
+          wrapperStyle={{ fontSize: 13, color: tokens.ink2 }}
         />
         {series.map((s) => {
           const color =
@@ -70,7 +70,7 @@ export function CompareChart({
               stroke={color}
               strokeWidth={2}
               connectNulls={false}
-              dot={{ r: 3, fill: color, stroke: tokens.surface, strokeWidth: 2 }}
+              dot={{ r: 3, fill: color, stroke: tokens.panel, strokeWidth: 2 }}
               activeDot={{ r: 5 }}
             />
           )

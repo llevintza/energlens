@@ -2,15 +2,15 @@ import type { CSSProperties } from 'react'
 import type { TooltipContentProps } from 'recharts'
 
 import { fmtPeriod } from '../../lib/format'
-import type { ChartTokens } from './tokens'
+import type { ChartTokens } from './chartTheme'
 
 export function makeTooltip(
   tokens: ChartTokens,
   formatValue: (value: number) => string,
 ) {
   const box: CSSProperties = {
-    background: tokens.surface,
-    border: `1px solid ${tokens.border}`,
+    background: tokens.panel,
+    border: `1px solid ${tokens.rule}`,
     borderRadius: 8,
     padding: '8px 10px',
     fontSize: 13,
@@ -24,7 +24,7 @@ export function makeTooltip(
     if (rows.length === 0) return null
     return (
       <div style={box}>
-        <div style={{ color: tokens.inkSecondary, marginBottom: 2 }}>
+        <div style={{ color: tokens.ink2, marginBottom: 2 }}>
           {fmtPeriod(String(label))}
         </div>
         {rows.map((row, i) => (
@@ -41,7 +41,7 @@ export function makeTooltip(
               />
             )}
             {rows.length > 1 && (
-              <span style={{ color: tokens.inkSecondary }}>{row.name}</span>
+              <span style={{ color: tokens.ink2 }}>{row.name}</span>
             )}
             <span style={{ color: tokens.ink, fontWeight: 600 }}>
               {formatValue(Number(row.value))}
