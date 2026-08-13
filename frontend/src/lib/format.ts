@@ -92,3 +92,19 @@ export function fmtPeriodTick(period: string): string {
   const d = new Date(`${period}T00:00:00`)
   return d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
+
+const MONTHS_SHORT = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC']
+
+/**
+ * `"2026-03"` → `"MAR"`, and `"2026-01"` → `"JAN '26"`.
+ *
+ * Uppercase mono for axis ticks. The year appears only in January, which is enough to
+ * anchor a 24-month axis without repeating "2026" twelve times — and it is where the
+ * reader is already looking for a boundary.
+ */
+export function fmtMonthTickMono(period: string): string {
+  const [year, month] = period.split('-')
+  const index = Number(month) - 1
+  const name = MONTHS_SHORT[index] ?? period
+  return index === 0 ? `${name} '${year.slice(2)}` : name
+}

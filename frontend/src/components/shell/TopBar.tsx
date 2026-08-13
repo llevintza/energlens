@@ -40,7 +40,7 @@ export function TopBar({ activePlaceId }: Props) {
           today: manual entry against the current place. #21 turns it into the
           Add-bill drawer; #24 can then widen it back to import. */}
       {activePlaceId && (
-        <Link className="btn small" to={`/places/${activePlaceId}`}>
+        <Link className="btn small" to={`/places/${activePlaceId}/manage`}>
           Add bill
         </Link>
       )}

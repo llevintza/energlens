@@ -1,0 +1,331 @@
+/* 2a — Dashboard. docs/design/README.md § "2a — Dashboard".
+ * Sections top to bottom, separated by a 1px --rule. */
+
+.dash-section {
+  padding: 18px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.dash-section:first-child {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+/* 1. Header */
+
+.dash-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.dash-title {
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink);
+}
+
+.dash-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  margin-top: 5px;
+}
+
+.dash-head-controls {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* 2. Headline band */
+
+.dash-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.dash-finding {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--ink);
+  margin: 0;
+  text-wrap: pretty;
+}
+
+.dash-explanation {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink2);
+  flex: 1;
+  min-width: 260px;
+  text-wrap: pretty;
+  margin: 0;
+}
+
+/* 3. KPI row — five equal columns, hairline separators, no card fills */
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0;
+}
+
+.stat-cell {
+  padding: 0 16px;
+  border-left: 1px solid var(--rule2);
+  min-width: 0;
+}
+
+.stat-cell:first-child {
+  border-left: 0;
+  padding-left: 0;
+}
+
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink4);
+}
+
+.stat-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-top: 4px;
+  line-height: 1.1;
+}
+
+.stat-foot {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.stat-note {
+  font-size: 11px;
+  color: var(--ink4);
+}
+
+/* 5. Is the rise real? — chart left, read-out right */
+
+.evidence {
+  display: grid;
+  grid-template-columns: minmax(0, 600fr) minmax(220px, 320fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.evidence-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink4);
+}
+
+.evidence-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin: 6px 0 2px;
+}
+
+.evidence-range {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink2);
+}
+
+.evidence-body {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink2);
+  margin-top: 10px;
+  text-wrap: pretty;
+}
+
+/* 6. Compare entry */
+
+.compare-entry {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.compare-entry h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0 0 3px;
+}
+
+.compare-entry p {
+  font-size: 12.5px;
+  color: var(--ink2);
+  margin: 0;
+}
+
+/* 7. Recent bills */
+
+.bills-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.bills-head h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.bills-head-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+}
+
+table.bills {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.bills th {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink4);
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--rule2);
+  white-space: nowrap;
+}
+
+table.bills td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule2);
+  font-size: 13px;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+table.bills th.num,
+table.bills td.num {
+  text-align: right;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+table.bills td.total {
+  font-weight: 600;
+}
+
+table.bills tbody tr:hover td {
+  background: var(--hover);
+}
+
+table.bills a {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+/* Responsive: below 900px the KPI row and the bills table both stop being grids. */
+@media (max-width: 1199px) {
+  .kpi-row {
+    grid-template-columns: repeat(3, 1fr);
+    row-gap: 16px;
+  }
+
+  .stat-cell:nth-child(4) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .evidence {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 899px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-cell:nth-child(odd) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  .dash-finding {
+    font-size: 22px;
+  }
+
+  /* One card per bill: period, total, kWh and effective price only. The remaining
+     columns are detail a phone cannot show without a horizontal scroll. */
+  table.bills thead {
+    display: none;
+  }
+
+  table.bills,
+  table.bills tbody,
+  table.bills tr,
+  table.bills td {
+    display: block;
+    width: 100%;
+  }
+
+  table.bills tr {
+    border: 1px solid var(--rule2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+
+  table.bills td {
+    border: 0;
+    padding: 2px 0;
+    text-align: left;
+  }
+
+  table.bills td.hide-sm {
+    display: none;
+  }
+
+  table.bills td.num {
+    text-align: left;
+  }
+
+  table.bills td::before {
+    content: attr(data-label) ' ';
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    color: var(--ink4);
+  }
+}

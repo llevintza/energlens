@@ -13,6 +13,7 @@ import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/shell/AppShell'
 import { DashboardPage } from './pages/DashboardPage'
+import { HomeRoute } from './pages/HomeRoute'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { PlaceDetailPage } from './pages/PlaceDetailPage'
@@ -77,10 +78,15 @@ export default function App() {
                 <Route path="/auth/callback" element={<OAuthCallbackPage />} />
                 <Route element={<ProtectedRoute />}>
                   <Route element={<AppShell />}>
-                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/" element={<HomeRoute />} />
                     <Route path="/places" element={<PlacesPage />} />
+                    <Route path="/places/:placeId" element={<DashboardPage />} />
+                    {/* Bill and place CRUD still lives on the old detail page until
+                        #21 turns both forms into drawers over the page you were on.
+                        Keeping it routed means "Add bill" leads somewhere real in the
+                        meantime, rather than being a control with nothing behind it. */}
                     <Route
-                      path="/places/:placeId"
+                      path="/places/:placeId/manage"
                       element={<PlaceDetailPage />}
                     />
                   </Route>
