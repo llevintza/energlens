@@ -12,6 +12,7 @@ import { OAuthCallbackPage } from './auth/OAuthCallbackPage'
 import { ProtectedRoute } from './auth/ProtectedRoute'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { AppShell } from './components/shell/AppShell'
+import { ComparePage } from './pages/ComparePage'
 import { DashboardPage } from './pages/DashboardPage'
 import { HomeRoute } from './pages/HomeRoute'
 import { LoginPage } from './pages/LoginPage'
@@ -81,6 +82,10 @@ export default function App() {
                     <Route path="/" element={<HomeRoute />} />
                     <Route path="/places" element={<PlacesPage />} />
                     <Route path="/places/:placeId" element={<DashboardPage />} />
+                    <Route
+                      path="/places/:placeId/compare"
+                      element={<ComparePage />}
+                    />
                     {/* Bill and place CRUD still lives on the old detail page until
                         #21 turns both forms into drawers over the page you were on.
                         Keeping it routed means "Add bill" leads somewhere real in the
