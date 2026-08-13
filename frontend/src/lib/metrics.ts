@@ -26,6 +26,11 @@ export interface ParsedBill {
   taxes: number | null
   total: number
   currency: string
+  /** How the bill got here — manual entry, the ingest CLI, or Claude extraction. The
+   *  recent-bills table shows it, because a figure's provenance changes how much you
+   *  should trust it. */
+  source: Bill['source']
+  providerName: string | null
 }
 
 /** Dates arrive as plain `YYYY-MM-DD`. Parsing them as local midnight rather than
@@ -63,6 +68,8 @@ export function parseBill(bill: Bill): ParsedBill {
     taxes: num(bill.taxes),
     total: Number(bill.total_amount),
     currency: bill.currency_code,
+    source: bill.source,
+    providerName: bill.provider_name,
   }
 }
 
@@ -631,5 +638,49 @@ export function headline(
     kind: 'steady',
     finding: 'Little has changed.',
     explanation: `${window}: spend ${fmtSignedPct(spendPct)}${usePct === null ? '' : `, consumption ${fmtSignedPct(usePct)}`}.`,
+  }
+}
+
+/** The shape of a place's tariff, derived from its own bills. */
+export interface TariffShape {
+  /** Typical standing charge per bill. */
+  fixedPerBill: number | null
+  /** Typical tax rate, as a fraction: 0.19 for 19%. */
+  taxRate: number | null
+  firstUnitPrice: number | null
+  latestUnitPrice: number | null
+}
+
+function median(values: number[]): number | null {
+  if (values.length === 0) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+  return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid]
+}
+
+/**
+ * The standing charge and tax rate this place is actually billed at.
+ *
+ * 2a's scatter needs both to draw its model curves. The handoff quotes 5.90 and 1.19,
+ * but those are the *demo* tariff's — hardcoding them would draw a curve for someone
+ * else's contract on every real account. The median rather than the mean, so one
+ * corrected bill or an unusual month does not move the curve.
+ */
+export function tariffShape(bills: ParsedBill[]): TariffShape {
+  const rate = contractRateChange(bills)
+  const taxRates: number[] = []
+  for (const bill of bills) {
+    const energy = energyCharge(bill)
+    if (bill.taxes === null || energy === null || bill.fixedCharges === null) continue
+    const base = energy + bill.fixedCharges
+    if (base > 0) taxRates.push(bill.taxes / base)
+  }
+  return {
+    fixedPerBill: median(
+      bills.map((b) => b.fixedCharges).filter((v): v is number => v !== null),
+    ),
+    taxRate: median(taxRates),
+    firstUnitPrice: rate.first,
+    latestUnitPrice: rate.latest,
   }
 }
