@@ -7,6 +7,8 @@ from app.db import get_async_session
 from app.models import Place, User
 from app.routers.deps import get_owned_place
 from app.schemas.place import PlaceCreate, PlaceRead, PlaceUpdate
+from app.services.documents import purge_objects, storage_keys_for_place
+from app.storage import StorageBackend, get_storage
 
 router = APIRouter(prefix="/places", tags=["places"])
 
@@ -57,6 +59,11 @@ async def update_place(
 async def delete_place(
     place: Place = Depends(get_owned_place),
     session: AsyncSession = Depends(get_async_session),
+    storage: StorageBackend = Depends(get_storage),
 ) -> None:
+    # The keys must be read before the delete: once the cascade has run, nothing
+    # records where the objects were. See app/services/documents.py.
+    keys = await storage_keys_for_place(session, place.id)
     await session.delete(place)
     await session.commit()
+    await purge_objects(storage, keys)

@@ -79,6 +79,8 @@ from sqlalchemy.pool import NullPool
 from app.db import get_async_session
 from app.main import app
 from app.models import Base
+from app.storage import get_storage
+from app.storage.local import LocalStorage
 
 TEST_DB_URL = os.environ["DATABASE_URL"]
 
@@ -125,7 +127,13 @@ async def db_engine():
 
 
 @pytest.fixture
-async def client(db_engine):
+def storage_root(tmp_path):
+    """Where the suite's uploaded objects go. Per-test, and thrown away."""
+    return tmp_path / "storage"
+
+
+@pytest.fixture
+async def client(db_engine, storage_root):
     maker = async_sessionmaker(db_engine, expire_on_commit=False)
 
     async def override_session():
@@ -133,6 +141,11 @@ async def client(db_engine):
             yield session
 
     app.dependency_overrides[get_async_session] = override_session
+    # LocalStorage rooted in tmp_path rather than a fake: it is the production
+    # default, so faking it here would leave the only backend this repo ships
+    # by default untested. The override is also what keeps the suite from
+    # writing into the real .storage/ directory.
+    app.dependency_overrides[get_storage] = lambda: LocalStorage(storage_root)
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as c:
         yield c
@@ -193,3 +206,95 @@ def bill_payload(**overrides):
     }
     payload.update(overrides)
     return payload
+
+
+# --- bill-document fixtures -------------------------------------------------
+#
+# Generated, never committed. AGENTS.md forbids committing a real bill and
+# .gitignore has `*.pdf`, so every PDF the suite touches is built in memory here
+# and nothing reaches disk except the storage root under tmp_path.
+
+
+def make_pdf(pages: int = 2, marker: str = "") -> bytes:
+    """A minimal, valid, multi-page PDF with a correct cross-reference table.
+
+    The xref matters: without it pypdf falls back to rebuilding one by scanning
+    the file, which succeeds but proves nothing about the page tree. With it,
+    ``len(reader.pages)`` is exactly ``pages``, so a test can assert a real
+    number rather than "not None".
+
+    ``marker`` is a PDF comment — legal anywhere, ignored by parsers — so it
+    changes the sha256 without changing the page count. That is what the
+    (place_id, sha256) dedupe tests need to tell "same file" from "same shape".
+    """
+    kids = " ".join(f"{3 + i} 0 R" for i in range(pages))
+    objects: list[bytes] = [
+        b"<< /Type /Catalog /Pages 2 0 R >>",
+        f"<< /Type /Pages /Kids [{kids}] /Count {pages} >>".encode(),
+    ]
+    # A page with no /Contents is a valid blank page; nothing here draws.
+    objects += [b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] >>"] * pages
+
+    out = bytearray(b"%PDF-1.4\n")
+    if marker:
+        out += f"% {marker}\n".encode()
+    offsets: list[int] = []
+    for number, body in enumerate(objects, start=1):
+        # Offsets are taken after the marker is written, so they stay correct.
+        offsets.append(len(out))
+        out += f"{number} 0 obj\n".encode() + body + b"\nendobj\n"
+    xref_at = len(out)
+    out += f"xref\n0 {len(objects) + 1}\n".encode()
+    out += b"0000000000 65535 f \n"
+    for offset in offsets:
+        out += f"{offset:010d} 00000 n \n".encode()
+    out += (
+        f"trailer\n<< /Size {len(objects) + 1} /Root 1 0 R >>\n"
+        f"startxref\n{xref_at}\n%%EOF\n"
+    ).encode()
+    return bytes(out)
+
+
+def make_png() -> bytes:
+    """A real 1x1 PNG, for the "renamed to .pdf" rejection test.
+
+    Built rather than pasted as a base64 blob so a reader can see it is a PNG.
+    A browser sets Content-Type from the *extension*, so a .png renamed .pdf
+    arrives declared as application/pdf — the magic-byte check is the only thing
+    that catches it, and this fixture is what proves that check is load-bearing.
+    """
+    import struct
+    import zlib
+
+    def chunk(kind: bytes, data: bytes) -> bytes:
+        return (
+            struct.pack(">I", len(data))
+            + kind
+            + data
+            + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
+        )
+
+    ihdr = struct.pack(">IIBBBBB", 1, 1, 8, 2, 0, 0, 0)  # 1x1, 8-bit RGB
+    idat = zlib.compress(b"\x00\xff\x00\x00")  # filter byte + one red pixel
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + chunk(b"IHDR", ihdr)
+        + chunk(b"IDAT", idat)
+        + chunk(b"IEND", b"")
+    )
+
+
+def make_corrupt_pdf() -> bytes:
+    """Valid header, unparseable body: accepted, stored, page_count NULL.
+
+    Storing and understanding are separate concerns, and this fixture is the
+    only thing pinning that — from outside, a file that was rejected and a file
+    stored with a null page count are indistinguishable unless a test asserts on
+    the row.
+    """
+    return b"%PDF-1.7\n" + b"garbage that is not an object graph\n" * 4 + b"%%EOF\n"
+
+
+def pdf_upload(data: bytes | None = None, name: str = "bill.pdf"):
+    """The `files=` argument for an httpx multipart POST."""
+    return {"file": (name, data if data is not None else make_pdf(), "application/pdf")}

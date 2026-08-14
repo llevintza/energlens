@@ -22,6 +22,28 @@ class Settings(BaseSettings):
     # Secure cookies on http://localhost (e.g. Safari).
     oauth_cookie_secure: bool = True
 
+    # Bill-document storage. "local" or "s3"; see app/storage/ and ADR-0021.
+    # Local is the default so a clone with no object-store account can run the
+    # whole app and the whole suite. Every field below has a default for the
+    # same reason the ones above do: the app must boot with nothing set.
+    storage_backend: str = "local"
+    storage_local_dir: str = str(_REPO_ROOT / ".storage")
+    # Any S3-compatible endpoint (Cloudflare R2, Backblaze B2, MinIO, AWS).
+    s3_endpoint_url: str = ""
+    s3_bucket: str = ""
+    # R2 ignores the region and wants "auto"; AWS and B2 want a real one.
+    s3_region: str = "auto"
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
+
+    # Upload limits. 10 MB is ~40x the largest bill in the corpus (~265 KB) and
+    # is enforced while streaming, so an oversized body is never fully read.
+    upload_max_bytes: int = 10 * 1024 * 1024
+    upload_daily_limit: int = 20
+    # Signed download URLs are capability URLs — they carry no auth of their
+    # own, so they expire fast.
+    signed_url_expires_in: int = 300
+
     model_config = SettingsConfigDict(
         env_file=(_REPO_ROOT / ".env", ".env"),
         extra="ignore",

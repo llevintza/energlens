@@ -101,6 +101,16 @@ class Bill(Base):
     currency_code: Mapped[str] = mapped_column(String(3))
     provider_name: Mapped[str | None] = mapped_column(String(100))
     raw_file_ref: Mapped[str | None] = mapped_column(String(500))
+    # SET NULL, not CASCADE: a bill outlives its PDF. Deleting the document
+    # someone uploaded must not delete the bill they checked and kept. Named by
+    # hand for the same reason corrects_bill_id is — Base configures no naming
+    # convention, so an unnamed constraint gets a generated name that no later
+    # migration can reliably drop.
+    document_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey(
+            "bill_documents.id", ondelete="SET NULL", name="fk_bills_document_id"
+        )
+    )
     source: Mapped[str] = mapped_column(String(10), default=BillSource.MANUAL)
     notes: Mapped[str | None] = mapped_column(Text)
 

@@ -30,6 +30,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0018](0018-frontend-testing-vitest-and-jsdom.md) | Frontend testing: Vitest for logic, jsdom for behaviour, a browser for layout | Accepted | Frontend |
 | [0019](0019-verify-the-api-deploy.md) | Verify the API deploy, and pin auto-deploy in the Blueprint | Accepted | Ops |
 | [0020](0020-invoice-identity-not-billing-period.md) | Identify a bill by its invoice number, not its billing period | Accepted | Data |
+| [0021](0021-pdf-blob-storage.md) | Keep bill PDFs in an object store, behind a two-backend Protocol | Accepted | Data |
 
 ## Status legend
 
@@ -69,6 +70,7 @@ Current total: **$0/month.** Where the money starts, per component:
 | GitHub Pages | 100 GB/mo bandwidth, public repo | private repo needs GitHub Pro |
 | Render | 512 MB, sleeps when idle | `starter` $7/mo — always-on, no other change |
 | Neon | 0.5 GB storage | Launch plan, ~$19/mo |
+| Object storage (unprovisioned) | R2 10 GB, B2 10 GB — no egress charge on either | R2 ~$0.015/GB/mo beyond it |
 
 The realistic first bill is Render's $7/mo to remove cold starts, and it is a
 one-line change to `render.yaml`. See

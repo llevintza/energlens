@@ -33,3 +33,6 @@ class Place(Base):
     bills: Mapped[list["Bill"]] = relationship(  # noqa: F821
         back_populates="place", cascade="all, delete-orphan"
     )
+    documents: Mapped[list["BillDocument"]] = relationship(  # noqa: F821
+        back_populates="place", cascade="all, delete-orphan"
+    )

@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
-from app.models import Bill, Place
+from app.models import Bill, BillDocument, Place
 from app.routers.deps import get_owned_place
 from app.schemas.bill import BillCreate, BillRead, BillUpdate
 
@@ -96,6 +96,28 @@ async def _check_corrects_bill(
         )
 
 
+async def _check_document(
+    session: AsyncSession,
+    place_id: uuid.UUID,
+    document_id: uuid.UUID | None,
+) -> None:
+    """Refuse a link to a document that is not on this place.
+
+    Same reasoning as _check_corrects_bill: bill_documents.id is global, so
+    without this any signed-in user could attach a stranger's PDF to their own
+    bill — and then read it back through the bill. 422, not 404, so the response
+    never confirms the id exists elsewhere.
+    """
+    if document_id is None:
+        return
+    document = await session.get(BillDocument, document_id)
+    if document is None or document.place_id != place_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="document_id does not refer to a document on this place",
+        )
+
+
 @router.get("", response_model=list[BillRead])
 async def list_bills(
     utility_type: str | None = None,
@@ -123,6 +145,7 @@ async def create_bill(
 ) -> Bill:
     values = data.model_dump()
     await _check_corrects_bill(session, place.id, values["corrects_bill_id"])
+    await _check_document(session, place.id, values["document_id"])
     if detail := await _duplicate_detail(session, place.id, values):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=detail)
 
@@ -168,6 +191,8 @@ async def update_bill(
         await _check_corrects_bill(
             session, bill.place_id, updates["corrects_bill_id"], self_id=bill.id
         )
+    if "document_id" in updates:
+        await _check_document(session, bill.place_id, updates["document_id"])
     # Against the values the bill would end up with, not the patch: the same
     # rule as create, so an edit cannot reach a state a create would refuse.
     merged = {

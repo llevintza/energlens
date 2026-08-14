@@ -160,6 +160,7 @@ export function seedBills(
       corrects_bill_id: null,
       customer_code: null,
       provider_tax_id: null,
+      document_id: null,
       created_at: `${periodEnd}T00:00:00Z`,
       updated_at: `${periodEnd}T00:00:00Z`,
     } satisfies Bill

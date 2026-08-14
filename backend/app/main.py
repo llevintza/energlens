@@ -1,4 +1,6 @@
 import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,16 +12,50 @@ from app.auth.oauth import github_oauth_client, google_oauth_client
 from app.auth.users import fastapi_users
 from app.config import settings
 from app.db import get_async_session
+from app.middleware import MaxBodySizeMiddleware
 from app.routers.account import router as account_router
+from app.routers.bill_documents import router as bill_documents_router
 from app.routers.bills import router as bills_router
 from app.routers.oauth_login import router as oauth_login_router
 from app.routers.places import router as places_router
 from app.routers.series import router as series_router
 from app.schemas.user import UserCreate, UserRead, UserUpdate
+from app.storage import configure_storage
 
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Energlens API")
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    """Fail the boot, not the first upload.
+
+    ``settings = Settings()`` is evaluated at import and every field has a
+    default — that invariant is load-bearing in config.py — so nothing at import
+    time can refuse a half-configured deployment. This runs before uvicorn binds
+    the port, so on Render a STORAGE_BACKEND=s3 with a blank bucket crash-loops
+    with the variable names in the log, the same shape as start.sh refusing to
+    boot without DATABASE_URL. The alternative is a service that looks healthy
+    until somebody uploads a file.
+
+    Deliberately not a module-level call: that would make `import app.main`
+    itself throw on a config error, turning every test collection and every
+    tooling import into a config gate.
+
+    httpx's ASGITransport — what tests/conftest.py uses — does not run the
+    lifespan, so this is inert during the suite. tests/test_storage.py drives it
+    directly for that reason.
+    """
+    configure_storage()
+    yield
+
+
+app = FastAPI(title="Energlens API", lifespan=lifespan)
+
+# Order matters, and not in the obvious direction: add_middleware inserts at the
+# front and Starlette wraps the list in reverse, so the LAST call here is the
+# OUTERMOST layer. The size guard is registered first so that CORS stays outside
+# it — otherwise a 413 would come back without Access-Control-Allow-Origin and
+# the browser would report an opaque network error instead of the status code.
+app.add_middleware(MaxBodySizeMiddleware)
 
 app.add_middleware(
     CORSMiddleware,
@@ -68,6 +104,7 @@ if google_oauth_client is not None or github_oauth_client is not None:
 
 app.include_router(places_router)
 app.include_router(bills_router)
+app.include_router(bill_documents_router)
 app.include_router(series_router)
 
 
