@@ -22,6 +22,9 @@ dist/
 extracted*.jsonl
 *.pdf
 
+# Local bill-document store (STORAGE_BACKEND=local). Real bills, never committed.
+.storage/
+
 # Harness-local settings — personal allowlists, machine paths. The shareable
 # half of the config is committed; this half never is.
 .claude/settings.local.json

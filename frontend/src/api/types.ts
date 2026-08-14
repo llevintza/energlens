@@ -70,8 +70,26 @@ export interface Bill {
   corrects_bill_id: string | null
   customer_code: string | null
   provider_tax_id: string | null
+  /** The uploaded PDF this bill came from. Null once the document is deleted —
+   *  the bill outlives it. Nothing renders this yet; #61 is where it surfaces. */
+  document_id: string | null
   created_at: string
   updated_at: string
+}
+
+/** A stored bill PDF. `storage_key` is deliberately absent — it is internal to
+ *  the backend's storage layer and never leaves it. */
+export interface BillDocument {
+  id: string
+  place_id: string
+  sha256: string
+  filename: string
+  media_type: string
+  byte_size: number
+  /** Null when the PDF could not be parsed. It is still stored. */
+  page_count: number | null
+  uploaded_by: string
+  created_at: string
 }
 
 export interface BillInput {
@@ -104,6 +122,7 @@ export interface BillInput {
   corrects_bill_id?: string | null
   customer_code?: string | null
   provider_tax_id?: string | null
+  document_id?: string | null
 }
 
 export type Metric = 'consumption' | 'cost' | 'unit_price'

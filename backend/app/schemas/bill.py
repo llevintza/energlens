@@ -48,6 +48,9 @@ class BillBase(BaseModel):
     corrects_bill_id: uuid.UUID | None = None
     customer_code: str | None = Field(default=None, max_length=50)
     provider_tax_id: str | None = Field(default=None, max_length=30)
+    # The uploaded PDF this bill came from, if any. Nullable and SET NULL on the
+    # column: the bill outlives the document.
+    document_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def check_period(self) -> "BillBase":
@@ -89,6 +92,7 @@ class BillUpdate(BaseModel):
     corrects_bill_id: uuid.UUID | None = None
     customer_code: str | None = Field(default=None, max_length=50)
     provider_tax_id: str | None = Field(default=None, max_length=30)
+    document_id: uuid.UUID | None = None
 
 
 class BillRead(BillBase):

@@ -11,6 +11,17 @@ dependencies = [
     "alembic>=1.13",
     "fastapi-users[sqlalchemy,oauth]>=14.0",
     "pydantic-settings>=2.2",
+    # Declared explicitly even though fastapi-users already pulls it in for its
+    # OAuth2 password form: the upload endpoint's UploadFile parsing depends on
+    # it directly, and a transitive dependency is one someone else's refactor
+    # can remove.
+    "python-multipart>=0.0.9",
+    # Page counting on upload. A PDF that fails to parse is still stored.
+    "pypdf>=5.0",
+    # Only imported when storage_backend="s3" — see app/storage/s3.py. Declared
+    # unconditionally so switching a deployed instance to object storage is an
+    # environment change, not a rebuild.
+    "boto3>=1.34",
 ]
 
 [dependency-groups]

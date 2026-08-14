@@ -294,6 +294,76 @@ at nothing.
    `smoke` job locally without redeploying anything. It reads the site's URL from
    the Pages API; pass `URL=…` to point it elsewhere.
 
+### Make uploaded PDFs survive a deploy
+
+**Until you do this, they do not.** `render.yaml` declares no `disk:` — disks are
+not offered on the free plan — so with `STORAGE_BACKEND=local` every uploaded bill
+is written to a filesystem Render throws away at the next deploy or idle
+spin-down. The rows remain, and `GET …/bill-documents/{id}/content` then answers
+`410 Gone`. Nothing else breaks, and no code change is needed to fix it — only
+these five variables. See [ADR-0021](docs/adr/0021-pdf-blob-storage.md).
+
+Either provider's free tier is ample and neither charges for egress:
+
+| | Cloudflare R2 | Backblaze B2 |
+| --- | --- | --- |
+| Free storage | 10 GB | 10 GB |
+| Egress | free | free to Cloudflare, 3× stored/day otherwise |
+| `S3_REGION` | `auto` | the real region, e.g. `us-west-004` |
+
+1. **Create a bucket.** R2: dashboard → R2 → *Create bucket*, private (the default
+   — do **not** enable public access; downloads go through the API, which checks
+   ownership). Then *Manage R2 API Tokens* → *Create API token* → **Object Read &
+   Write**, scoped to that one bucket.
+
+   Stop and come back if you are asked for a payment method to create the bucket:
+   R2's free tier does ask for a card on some account types, and that is a decision
+   to make deliberately rather than mid-runbook.
+
+2. **Read off the four values.** R2 shows an endpoint of the form
+   `https://<account-id>.r2.cloudflarestorage.com` — the account id, *not* the
+   bucket name, and no bucket path on the end.
+
+3. **Verify the credentials before pasting them anywhere.** A wrong value here
+   fails at first upload, which is a long way from here:
+
+   ```sh
+   uv run --directory backend --with boto3 python - <<'PY'
+   import boto3
+   from botocore.config import Config
+   s3 = boto3.client(
+       "s3",
+       endpoint_url="https://<account-id>.r2.cloudflarestorage.com",
+       region_name="auto",
+       aws_access_key_id="<key-id>",
+       aws_secret_access_key="<secret>",
+       config=Config(signature_version="s3v4"),
+   )
+   s3.put_object(Bucket="<bucket>", Key="_preflight", Body=b"ok")
+   assert s3.get_object(Bucket="<bucket>", Key="_preflight")["Body"].read() == b"ok"
+   s3.delete_object(Bucket="<bucket>", Key="_preflight")
+   print("bucket reachable, readable, writable")
+   PY
+   ```
+
+   `SignatureDoesNotMatch` means the secret is wrong; `InvalidAccessKeyId`, the key
+   id; `NoSuchBucket` with everything else correct usually means the endpoint has a
+   bucket path on it that should not be there.
+
+4. **Set them on Render** (Environment → the five `sync: false` keys) and change
+   `STORAGE_BACKEND` from `local` to `s3`. Save; Render redeploys.
+
+5. **Watch the boot.** The app validates this at startup, so a half-configured
+   switch fails loudly rather than on somebody's first upload. A healthy log runs
+   `uv sync --locked` → `alembic upgrade head` → the seed → `Uvicorn running`. A
+   bad one stops at:
+
+   ```
+   RuntimeError: STORAGE_BACKEND=s3 but these are unset or blank: S3_BUCKET.
+   ```
+
+   which names exactly what to fix.
+
 ### How the pieces fit
 
 - **Frontend — GitHub Pages** via `.github/workflows/deploy-frontend.yml`. Set
@@ -381,3 +451,8 @@ Design notes worth knowing:
 - `(place_id, utility_type, period_start, period_end)` is unique — importers
   are idempotent by construction.
 - The schema is ready for gas/water later (`utility_type` + `unit` columns).
+- Uploaded PDFs are content-addressed: `bill_documents` is unique on
+  `(place_id, sha256)`, so sending the same file twice returns the first row with
+  `200` instead of storing it again. The bytes live in an object store, not in
+  Postgres — [ADR-0021](docs/adr/0021-pdf-blob-storage.md), and see "Make uploaded
+  PDFs survive a deploy" above before relying on them in production.

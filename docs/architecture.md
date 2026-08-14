@@ -138,6 +138,8 @@ erDiagram
     user ||--o{ oauth_account : "has"
     user ||--o{ places : "owns"
     places ||--o{ bills : "accumulates"
+    places ||--o{ bill_documents : "holds"
+    bill_documents |o--o{ bills : "sourced"
 
     user {
         uuid id PK
@@ -170,8 +172,24 @@ erDiagram
         numeric vat_rate
         enum read_method "actual / self_read / estimated / …"
         enum source "manual / script / pdf"
+        uuid document_id FK "ON DELETE SET NULL — a bill outlives its PDF"
+    }
+    bill_documents {
+        uuid id PK
+        uuid place_id FK "ON DELETE CASCADE"
+        uuid uploaded_by FK "user, ON DELETE CASCADE"
+        string sha256 "UNIQUE per place — makes re-upload idempotent"
+        string storage_key "opaque: {place_id}/{sha256}.pdf"
+        int byte_size
+        int page_count "NULL when the PDF would not parse"
     }
 ```
+
+The bytes themselves live outside PostgreSQL, in an object store reached through
+`backend/app/storage/` — see [ADR-0021](adr/0021-pdf-blob-storage.md). No foreign
+key reaches them, so deleting a place or an account has to remove the objects in
+application code (`backend/app/services/documents.py`); the cascade only takes the
+rows.
 
 **`UNIQUE (place_id, provider_invoice_series, provider_invoice_number)`** on `bills`
 is what makes ingestion idempotent — re-importing the same invoice conflicts instead

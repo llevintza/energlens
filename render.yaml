@@ -54,3 +54,28 @@ services:
 
       - key: SEED_DEMO
         value: "true"
+
+      # Bill-document storage (docs/adr/0020-pdf-blob-storage.md).
+      #
+      # This service declares no `disk:`, so Render's filesystem is EPHEMERAL —
+      # anything STORAGE_BACKEND=local writes is gone at the next deploy or
+      # spin-down. Leaving this as "local" is a deliberate, temporary state:
+      # uploads work, and the objects do not survive. Switch it to "s3" and set
+      # the four values below to make storage durable; the README's Deployment
+      # section is the runbook. The app refuses to boot with STORAGE_BACKEND=s3
+      # and any of them blank, so a half-configured switch fails loudly here
+      # rather than on somebody's first upload.
+      - key: STORAGE_BACKEND
+        value: local
+
+      - key: S3_ENDPOINT_URL
+        sync: false
+      - key: S3_BUCKET
+        sync: false
+      # R2 ignores this and wants "auto"; AWS and B2 want a real region.
+      - key: S3_REGION
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
