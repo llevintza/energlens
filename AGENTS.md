@@ -100,7 +100,13 @@ you nothing about the branch in front of you.
 ## Conventions
 
 - Python is managed with `uv` in `backend/` and `ingest/`; the `make` targets
-  wrap it. Node is pinned by CI at 22.
+  wrap it.
+- Node is pinned at 22 by `.nvmrc` — `actions/setup-node` reads it through
+  `node-version-file`, `nvm use` reads it locally. Two consumers cannot read it
+  and so keep literal copies: `engines` in `frontend/package.json` (enforced
+  rather than advisory, because `frontend/.npmrc` sets `engine-strict=true`, so
+  `npm ci` fails instead of warning) and `README.md`.
+  **`backend/tests/test_toolchain.py` fails if either copy drifts.**
 - Database identity — user, port, all three database names — is defined in
   `scripts/db.env`. `scripts/db.sh` and `scripts/pgdev.sh` source it; the
   environment overrides it, so `PGPORT=5433 make db-up` works. Four consumers
