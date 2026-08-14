@@ -86,6 +86,10 @@ def _make_bills(
                 fixed_charges=_money(fixed),
                 taxes=_money(taxes),
                 total_amount=_money(subtotal + taxes),
+                # No balance is carried forward in the demo, so what is payable
+                # is what the bill is worth. Stated rather than left NULL, so a
+                # fresh seed matches a database the migration backfilled.
+                total_due=_money(subtotal + taxes),
                 currency_code=place.currency_code,
                 provider_name=provider,
                 source="script",

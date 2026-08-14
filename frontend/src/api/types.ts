@@ -23,6 +23,14 @@ export type PlaceInput = Omit<Place, 'id' | 'created_at' | 'updated_at'>
 
 export type UtilityType = 'electricity' | 'gas' | 'water'
 export type BillSource = 'manual' | 'script' | 'ai'
+export type DocumentType = 'invoice' | 'credit_note'
+/** How the meter index behind the consumption figure was arrived at. */
+export type ReadMethod =
+  | 'actual'
+  | 'self_read'
+  | 'estimated'
+  | 'regularisation'
+  | 'mixed'
 
 // Money/decimal fields arrive as strings to preserve precision.
 export interface Bill {
@@ -36,12 +44,32 @@ export interface Bill {
   unit_price: string | null
   fixed_charges: string | null
   taxes: string | null
+  /** The invoice's own value. What is payable is `total_due`. */
   total_amount: string
   currency_code: string
   provider_name: string | null
   raw_file_ref: string | null
   source: BillSource
   notes: string | null
+  // What the invoice itself says. Everything here is null on a bill typed in by
+  // hand or uploaded before the extraction agent existed.
+  provider_invoice_series: string | null
+  provider_invoice_number: string | null
+  issued_on: string | null
+  due_on: string | null
+  net_amount: string | null
+  vat_base: string | null
+  /** A fraction, not a percentage: '0.1900', and '0.2100' from July 2026. */
+  vat_rate: string | null
+  vat_amount: string | null
+  balance_brought_forward: string | null
+  /** total_amount plus any balance carried forward — what is actually owed. */
+  total_due: string | null
+  read_method: ReadMethod | null
+  document_type: DocumentType
+  corrects_bill_id: string | null
+  customer_code: string | null
+  provider_tax_id: string | null
   created_at: string
   updated_at: string
 }
@@ -59,6 +87,23 @@ export interface BillInput {
   provider_name: string | null
   source: BillSource
   notes: string | null
+  // Optional: the API defaults document_type and leaves the rest null, so a
+  // hand-filled form need not carry an invoice it never saw.
+  provider_invoice_series?: string | null
+  provider_invoice_number?: string | null
+  issued_on?: string | null
+  due_on?: string | null
+  net_amount?: string | null
+  vat_base?: string | null
+  vat_rate?: string | null
+  vat_amount?: string | null
+  balance_brought_forward?: string | null
+  total_due?: string | null
+  read_method?: ReadMethod | null
+  document_type?: DocumentType
+  corrects_bill_id?: string | null
+  customer_code?: string | null
+  provider_tax_id?: string | null
 }
 
 export type Metric = 'consumption' | 'cost' | 'unit_price'

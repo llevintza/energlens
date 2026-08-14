@@ -157,20 +157,35 @@ erDiagram
     bills {
         uuid id PK
         uuid place_id FK "ON DELETE CASCADE"
+        uuid corrects_bill_id FK "self, ON DELETE SET NULL"
         enum utility_type
+        enum document_type "invoice / credit_note"
         date period_start
         date period_end
+        string provider_invoice_series
+        string provider_invoice_number
         numeric consumption
-        numeric total_cost
+        numeric total_amount "the invoice's own value"
+        numeric total_due "plus any balance carried forward"
+        numeric vat_rate
+        enum read_method "actual / self_read / estimated / …"
         enum source "manual / script / pdf"
     }
 ```
 
-**`UNIQUE (place_id, utility_type, period_start, period_end)`** on `bills` is what
-makes ingestion idempotent — re-importing the same PDF conflicts instead of
-duplicating. Monthly series are *derived* from these periods by day-overlap
-proration ([`backend/app/services/series.py`](../backend/app/services/series.py)) rather
-than stored, because real bills do not align to calendar months.
+**`UNIQUE (place_id, provider_invoice_series, provider_invoice_number)`** on `bills`
+is what makes ingestion idempotent — re-importing the same invoice conflicts instead
+of duplicating. It replaced a unique constraint on the *period*, which a `Stornare`
+(a reversal, reprinting the period of the invoice it cancels) could not satisfy —
+two bills in the corpus were unstorable. PostgreSQL exempts NULLs from a UNIQUE
+tuple, so bills with no invoice number — every manually-entered one, and every one
+the ingest CLI sends today — are unconstrained here; for exactly those,
+[`backend/app/routers/bills.py`](../backend/app/routers/bills.py) still refuses a
+duplicate period. See [ADR-0020](adr/0020-invoice-identity-not-billing-period.md).
+
+Monthly series are *derived* from these periods by day-overlap proration
+([`backend/app/services/series.py`](../backend/app/services/series.py)) rather than
+stored, because real bills do not align to calendar months.
 
 ---
 

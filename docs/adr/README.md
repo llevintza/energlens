@@ -29,6 +29,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0017](0017-verify-the-pages-deploy.md) | Verify the Pages deploy, and route its failure to an issue | Accepted | Ops |
 | [0018](0018-frontend-testing-vitest-and-jsdom.md) | Frontend testing: Vitest for logic, jsdom for behaviour, a browser for layout | Accepted | Frontend |
 | [0019](0019-verify-the-api-deploy.md) | Verify the API deploy, and pin auto-deploy in the Blueprint | Accepted | Ops |
+| [0020](0020-invoice-identity-not-billing-period.md) | Identify a bill by its invoice number, not its billing period | Accepted | Data |
 
 ## Status legend
 

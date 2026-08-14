@@ -113,8 +113,12 @@ Claude, so it never costs anything. The CLI reads `ENERGLENS_TOKEN` or
 `ENERGLENS_EMAIL`/`ENERGLENS_PASSWORD`, and `ENERGLENS_API_URL` (default
 `http://localhost:8000`); the older `ET_*` names still work.
 
-Re-runs skip already-uploaded periods (the API returns 409 for duplicates) and
-never re-pay extraction for unchanged files. Extraction uses Claude
+Re-runs skip already-uploaded bills (the API returns 409 for duplicates) and
+never re-pay extraction for unchanged files. A duplicate is decided by the
+provider's invoice number when the bill carries one, and by
+`(place, utility type, period)` when it does not — which is every bill this CLI
+sends today, so its re-run behaviour is unchanged. The period is not identity: a
+`Stornare` reverses an invoice and reprints its period, and both have to fit. Extraction uses Claude
 (`claude-opus-5`, roughly 1–2¢ per bill); a large backlog can be moved to the
 Batches API for 50% off.
 
