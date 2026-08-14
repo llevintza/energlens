@@ -43,9 +43,9 @@ async def _duplicate_detail(
 
     PostgreSQL exempts NULLs from a UNIQUE tuple, so bills with no invoice number
     would be unconstrained entirely. Every bill the ingest CLI sends is one of
-    those, and README's "re-runs skip already-uploaded periods" rests on the 409.
-    So the old period rule survives here, in application code, for exactly those
-    bills: deliberate and tested, rather than silently dropped.
+    those, and README's promise that its re-runs skip what is already uploaded
+    rests on the 409. So the old period rule survives here, in application code,
+    for exactly those bills: deliberate and tested, rather than silently dropped.
     """
     query = select(Bill.id).where(Bill.place_id == place_id)
     if values.get("provider_invoice_number"):
@@ -83,8 +83,8 @@ async def _check_corrects_bill(
     could link their credit note to a stranger's bill. 422 rather than 404: the
     response must not confirm that the id exists somewhere else.
 
-    A bill correcting itself is refused for the same reason — it is a cycle of
-    one, and anything walking the chain later would have to defend against it.
+    A bill correcting itself is refused here too — it is a cycle of one, and
+    anything walking the chain later would have to defend against it.
     """
     if corrects_bill_id is None:
         return
