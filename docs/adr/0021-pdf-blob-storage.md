@@ -3,7 +3,7 @@
 - **Status:** Accepted
 - **Date:** 2026-08-13
 - **Deciders:** llevintza
-- **Landed in:** PR #TBD (`commit`)
+- **Landed in:** PR #94 (`25f6436`)
 - **Related:** [ADR-0011](0011-backend-hosting-render.md), [ADR-0012](0012-database-hosting-neon.md), [ADR-0014](0014-split-liveness-and-readiness-health-checks.md), [ADR-0020](0020-invoice-identity-not-billing-period.md), issues #54, #49, #24
 
 ## Context
