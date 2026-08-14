@@ -70,7 +70,14 @@ export function BillForm({ currency, initial, onSubmit, onCancel }: Props) {
       })
     } catch (e) {
       if (e instanceof ApiError && e.status === 409) {
-        setError('A bill for this exact period already exists')
+        // A duplicate is decided by invoice number when the bill carries one,
+        // and only otherwise by period, so the server says which — repeating
+        // the period wording here would be wrong half the time.
+        setError(
+          typeof e.detail === 'string'
+            ? e.detail
+            : 'A bill for this exact period already exists',
+        )
       } else if (e instanceof ApiError && e.status === 422) {
         setError('Check the fields: ' + JSON.stringify(e.detail))
       } else {

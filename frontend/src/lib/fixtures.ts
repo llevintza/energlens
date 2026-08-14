@@ -143,6 +143,23 @@ export function seedBills(
       raw_file_ref: null,
       source: 'script',
       notes: null,
+      // seed.py writes none of the invoice fields — the seed is generated, not
+      // extracted from a PDF — so the fixture carries what the API returns.
+      provider_invoice_series: null,
+      provider_invoice_number: null,
+      issued_on: null,
+      due_on: null,
+      net_amount: null,
+      vat_base: null,
+      vat_rate: null,
+      vat_amount: null,
+      balance_brought_forward: null,
+      total_due: total.toFixed(2),
+      read_method: null,
+      document_type: 'invoice',
+      corrects_bill_id: null,
+      customer_code: null,
+      provider_tax_id: null,
       created_at: `${periodEnd}T00:00:00Z`,
       updated_at: `${periodEnd}T00:00:00Z`,
     } satisfies Bill

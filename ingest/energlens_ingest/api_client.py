@@ -77,7 +77,12 @@ class EnerglensClient:
         )
 
     def create_bill(self, place_id: str, payload: dict) -> str:
-        """Returns 'created', 'skipped' (duplicate period), or raises."""
+        """Returns 'created', 'skipped' (the API called it a duplicate), or raises.
+
+        The API decides duplicates by invoice number when the bill carries one and
+        by period otherwise. This CLI sends no invoice number, so it still gets the
+        period rule and its re-runs stay idempotent.
+        """
         response = self._request("POST", f"/places/{place_id}/bills", json=payload)
         if response.status_code == 201:
             return "created"
