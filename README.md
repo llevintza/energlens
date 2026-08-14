@@ -18,9 +18,10 @@ provider doesn't give you.
 
 ## Quick start (local)
 
-Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 20+, and
-PostgreSQL — either Docker or, without Docker, Homebrew Postgres
-(`brew install postgresql@16`), which `make db-up` will set up in a
+Requirements: Python 3.12+, [uv](https://docs.astral.sh/uv/), Node 22+ (the
+version in `.nvmrc` — `nvm use` picks it up, and `npm ci` refuses to install on
+anything older), and PostgreSQL — either Docker or, without Docker, Homebrew
+Postgres (`brew install postgresql@16`), which `make db-up` will set up in a
 project-local `.pgdata/` on first run.
 
 ```sh
