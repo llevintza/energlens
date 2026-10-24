@@ -8,7 +8,10 @@
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <link rel="icon" type="image/png" sizes="32x32" href="%BASE_URL%favicon-32.png" />
     <link rel="apple-touch-icon" href="%BASE_URL%apple-touch-icon.png" />
-    <!-- Browser chrome matches the page background (--bg in src/styles/tokens.css). -->
+    <!-- Browser chrome matches the page background (--bg in src/styles/tokens.css).
+         Like the SVG's own query, this follows the OS scheme, not the in-app
+         theme toggle (data-theme), so a Dark choice on a light OS keeps light
+         chrome. Accepted: static markup cannot see the toggle. -->
     <meta name="theme-color" content="#f9f9f7" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0d0d0d" media="(prefers-color-scheme: dark)" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
