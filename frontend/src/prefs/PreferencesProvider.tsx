@@ -1,5 +1,7 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+
+import { PreferencesContext } from './usePreferences'
 
 export type NumberFormat = 'locale' | 'plain'
 export type DefaultRange = '12m' | '24m' | 'all'
@@ -15,14 +17,6 @@ const DEFAULTS: Preferences = { numberFormat: 'locale', defaultRange: '24m' }
    pre-paint script in index.html before any bundle loads, so it is a bare string that
    cannot half-parse. These are only ever read by React, so JSON is fine. */
 const STORAGE_KEY = 'energlens-prefs'
-
-interface PreferencesState {
-  prefs: Preferences
-  /** Partial merge — callers set one field without restating the rest. */
-  setPrefs: (patch: Partial<Preferences>) => void
-}
-
-const PreferencesContext = createContext<PreferencesState | null>(null)
 
 function read(): Preferences {
   try {
@@ -67,10 +61,4 @@ export function PreferencesProvider({ children }: { children: ReactNode }) {
   return (
     <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>
   )
-}
-
-export function usePreferences(): PreferencesState {
-  const ctx = useContext(PreferencesContext)
-  if (!ctx) throw new Error('usePreferences outside PreferencesProvider')
-  return ctx
 }

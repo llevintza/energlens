@@ -4,11 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
 import { usePlaces } from '../api/hooks'
 import type { Bill } from '../api/types'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { Segmented } from '../components/ui/Segmented'
-import { usePreferences } from '../prefs/PreferencesProvider'
+import { usePreferences } from '../prefs/usePreferences'
 import type { ThemeChoice } from '../theme/ThemeProvider'
-import { useTheme } from '../theme/ThemeProvider'
+import { useTheme } from '../theme/useTheme'
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (

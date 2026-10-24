@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { QueryError } from '../QueryError'
-
-export type ChartStatus = 'pending' | 'error' | 'empty' | 'ready'
+import type { ChartStatus } from './chartStatus'
 
 interface Props {
   /** The design height for this chart. Held in every state so nothing reflows. */
@@ -77,15 +76,4 @@ export function ChartFrame({
       {status === 'ready' && <div className="chart-frame-body">{children}</div>}
     </section>
   )
-}
-
-/** Resolve a TanStack Query into a chart status, with the error-before-empty ordering
- *  applied once so no caller has to remember it. */
-export function chartStatus(
-  query: { isError: boolean; isPending: boolean },
-  hasData: boolean,
-): ChartStatus {
-  if (query.isError) return 'error'
-  if (query.isPending) return 'pending'
-  return hasData ? 'ready' : 'empty'
 }

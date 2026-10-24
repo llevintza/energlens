@@ -3,14 +3,14 @@ import { useForm } from 'react-hook-form'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 
 import { ApiError } from '../api/client'
-import { useAuth } from '../auth/AuthContext'
+import { useAuth } from '../auth/useAuth'
 import { Sparkline } from '../components/charts/Sparkline'
 import { OAuthButtons, hasOAuthProviders } from '../components/OAuthButtons'
 import { Segmented } from '../components/ui/Segmented'
 import { fmtSignedPct } from '../lib/format'
 import { MAIN_RESIDENCE, seedBills } from '../lib/fixtures'
 import { effectivePriceSeries, parseBills, pctChange } from '../lib/metrics'
-import { useTheme } from '../theme/ThemeProvider'
+import { useTheme } from '../theme/useTheme'
 
 type Mode = 'signin' | 'register'
 
