@@ -123,3 +123,48 @@ you nothing about the branch in front of you.
   whether that host comes from `PGHOST` or from `DATABASE_URL`.
 - Never commit `.env`, tokens, credentials, real bill PDFs, or
   `.claude/settings.local.json`.
+
+## Agent roles and PR workflow
+
+Work is split across agents with fixed roles, so that the agent who wrote a
+change is never the one who approves it:
+
+- **Orchestrator** — the agent the user talks to. It plans the work, splits it
+  into self-contained tasks, dispatches them to Orca orchestration workers
+  (`orca orchestration worker-start`) and aggregates their results. It does not
+  edit repo files itself; that keeps its context free for coordination.
+- **Implementer** (worker) — one task, one branch, one PR. `make check` passes
+  before the PR is opened, for the same reason it gates merges.
+- **PR Reviewer** (worker) — monitors each open PR until it is merged. It reads
+  every comment, inline thread and CI check, and addresses feedback from the
+  Tech Coordinator, Leo or anyone else with new commits on the same branch —
+  never a force-push, which would hide what changed from the reviewers. It
+  replies to each thread saying what changed or why not, resolves the threads
+  it addressed, and fixes failing checks. When feedback is ambiguous or
+  conflicts with this file, it escalates to the Orchestrator instead of
+  guessing.
+- **Arbiter** (approver persona, worker) — an independent reviewer that never
+  wrote or fixed the code. It signs off only when CI is green, no thread is
+  unresolved, and the change follows this file and does what the PR says. It
+  posts exactly one verdict per review round: `[Arbiter] ✅ Signed off` with a
+  short rationale, or `[Arbiter] ❌ Changes requested` with a numbered list for
+  the PR Reviewer to address before the next round. It never pushes code.
+- **Tech Coordinator** — Leo's GrokBot. It may leave review feedback and merge.
+
+### Identity rule
+
+Every agent, the Tech Coordinator included, posts through Leo's own GitHub
+account. GitHub will not let an author approve their own PR, so its Approve
+review is unavailable, and comment authors are indistinguishable. Therefore:
+
+- Every agent-written comment or reply starts with its role tag in brackets:
+  `[Implementer]`, `[PR Reviewer]`, `[Arbiter]`, `[Tech Coordinator]`.
+- A comment with no tag is from Leo and takes priority.
+- The Arbiter's `✅ Signed off` comment is the approval of record. Post it with
+  `gh pr comment` or `gh pr review --comment`; never use `--approve`.
+
+### Merging
+
+Agents never merge. Leo or the Tech Coordinator merges once the Arbiter has
+signed off on the latest commit. A sign-off covers only the commit it reviewed,
+so any commit pushed after it needs a fresh Arbiter verdict.
