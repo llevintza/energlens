@@ -1,12 +1,7 @@
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
+
+import { ThemeContext } from './useTheme'
 
 /** What the user picked. SYSTEM is a real choice, not the absence of one. */
 export type ThemeChoice = 'light' | 'dark' | 'system'
@@ -17,16 +12,6 @@ export type ResolvedTheme = 'light' | 'dark'
    resolution because it runs before any module can. */
 const STORAGE_KEY = 'energlens-theme'
 const DARK_QUERY = '(prefers-color-scheme: dark)'
-
-interface ThemeState {
-  /** The persisted choice, including 'system'. */
-  choice: ThemeChoice
-  /** The choice resolved against the OS. What is on <html data-theme>. */
-  resolved: ResolvedTheme
-  setChoice: (choice: ThemeChoice) => void
-}
-
-const ThemeContext = createContext<ThemeState | null>(null)
 
 function readChoice(): ThemeChoice {
   try {
@@ -109,10 +94,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   )
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-}
-
-export function useTheme(): ThemeState {
-  const ctx = useContext(ThemeContext)
-  if (!ctx) throw new Error('useTheme outside ThemeProvider')
-  return ctx
 }

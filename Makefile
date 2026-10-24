@@ -34,11 +34,11 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
 
 # Only names with rules below. A phony target with no recipe exits 0 while
 # doing nothing, which on the repo's authoritative command surface reads as
-# "it passed"; a missing target at least fails loudly. fmt/lint/lint-py/lint-web
-# arrive with the linters that back them.
+# "it passed"; a missing target at least fails loudly. fmt/lint/lint-py arrive
+# with the linters that back them.
 .PHONY: help setup env db-up db-down db-ensure db-reset db-shell db-preflight \
         migrate migration migrate-check lock-check seed dev-api dev-web \
-        typecheck build-web \
+        typecheck lint-web build-web \
         test test-backend test-ingest test-frontend \
         check ci-backend ci-frontend api-preflight api-smoke smoke-web clean
 
@@ -123,6 +123,11 @@ dev-web: $(NODE_STAMP) ## Run the SPA at http://localhost:5173
 typecheck: $(NODE_STAMP) ## Typecheck the frontend
 	$(WEB) npm run typecheck
 
+# --deny-warnings lives in the npm script, so a warning fails `npm run lint` run
+# by hand exactly as it fails the gate; oxlint alone exits 0 on warnings.
+lint-web: $(NODE_STAMP) ## Lint the frontend with oxlint (warnings fail)
+	$(WEB) npm run lint
+
 build-web: $(NODE_STAMP) ## Production build of the frontend
 	$(WEB) npm run build
 
@@ -157,10 +162,11 @@ lock-check: ## Assert both uv.lock files still match their pyproject.toml
 # Same order as backend-ci.yml: the migration gate runs before the suites.
 ci-backend: lock-check migrate-check test-backend test-ingest
 
+# Lint runs first: it is the fastest of the four, and the cheapest to fail on.
 # Depends on test-frontend rather than relying on build-web to run tsc first, so
 # that adding a real frontend test runner to test-frontend lands in `make check`
 # automatically instead of silently escaping the gate.
-ci-frontend: test-frontend build-web
+ci-frontend: lint-web test-frontend build-web
 
 ## -- deploy -----------------------------------------------------------------
 

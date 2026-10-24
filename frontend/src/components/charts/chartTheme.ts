@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { useTheme } from '../../theme/ThemeProvider'
+import { useTheme } from '../../theme/useTheme'
 
 /** Chart colours, read from the CSS custom properties so there is one palette and not
  *  a second copy of every hex in TypeScript. Names follow docs/design/README.md. */

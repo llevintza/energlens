@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from 'react-router-dom'
 
 import { QueryError } from '../components/QueryError'
-import { useAuth } from './AuthContext'
+import { useAuth } from './useAuth'
 
 export function ProtectedRoute() {
   const { user, loading, bootError, retryBoot } = useAuth()
