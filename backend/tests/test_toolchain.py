@@ -32,9 +32,9 @@ def pinned_major() -> str:
 
 class TestNodeVersion:
     def test_nvmrc_pins_a_bare_major(self):
-        # A bare major resolves to the newest 22.x wherever it is read, which is
+        # A bare major resolves to the newest 24.x wherever it is read, which is
         # what keeps CI on a release recent enough for the tighter floors the
-        # dependency tree declares (jsdom wants ^22.22.2). A full version here
+        # dependency tree declares (jsdom wants ^24.15.0). A full version here
         # would freeze that and go stale silently.
         text = (REPO_ROOT / ".nvmrc").read_text()
         assert re.fullmatch(r"\d+\n", text), (
