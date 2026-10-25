@@ -1,6 +1,13 @@
 # Commits that `git blame` should look through: bulk reformatting only.
 # GitHub's blame view reads this file automatically; for local blame, run once:
 #   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# List the commit as it landed on main, not the PR branch's commit. This repo
+# squash-merges (docs/architecture.md, "Delivery pipeline"), so a branch SHA is
+# never an ancestor of main and ignores nothing. backend/tests/test_toolchain.py
+# fails if an entry here is not an ancestor of HEAD.
 
-# Reformat backend and ingest with ruff (mechanical, no hand edits) — #81
-caa83dd5449766fee0fb5d0f5e6a01746a2a7934
+# Lint and format the Python with ruff — #117, #81. The squash also carries
+# #117's ruff config and its six hand fixes, so blame skips those lines too:
+# accepted, because the mechanical reformat cannot be listed on its own.
+77f18d87d52c92d6d677f5f83a2ed2b0cc00b5d7

@@ -232,6 +232,9 @@ api-preflight`, `make api-smoke` and `make smoke-web` all reach for a live produ
 host, and a gate that depends on third-party uptime blocks merges when that third
 party is down.
 
+Because PRs are squash-merged, a branch's commits never reach main: anything that
+names a commit on main — `.git-blame-ignore-revs` above all — must name the squash.
+
 **The dotted edge is a real trap.** `deploy-frontend.yml` has a `paths` filter of
 `frontend/**`, and `API_URL` is inlined into the bundle at *build* time. Changing the
 `API_URL` repository variable therefore triggers no deploy at all — it needs an

@@ -19,8 +19,12 @@ the database.
 
 import json
 import re
+import shutil
+import subprocess
 import tomllib
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
@@ -117,3 +121,33 @@ class TestRuff:
             )
             pins[package] = matches[0]
         assert len(set(pins.values())) == 1, f"ruff pins disagree: {pins}"
+
+
+def git(*args: str) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        ["git", *args], cwd=REPO_ROOT, capture_output=True, text=True, check=False
+    )
+
+
+def history_unavailable() -> bool:
+    # CI's default checkout is a depth-1 clone, where every older commit looks
+    # absent; a tarball has no git at all. Both say nothing about the file.
+    if shutil.which("git") is None:
+        return True
+    shallow = git("rev-parse", "--is-shallow-repository")
+    return shallow.returncode != 0 or shallow.stdout.strip() != "false"
+
+
+@pytest.mark.skipif(history_unavailable(), reason="needs full git history")
+def test_blame_ignore_revs_are_on_main_history():
+    # #117 listed its branch's reformat commit, then was squash-merged: that SHA
+    # never reached main, so the entry silently ignored nothing.
+    lines = (REPO_ROOT / ".git-blame-ignore-revs").read_text().splitlines()
+    shas = [line.strip() for line in lines if line.strip() and not line.startswith("#")]
+    assert shas, ".git-blame-ignore-revs lists no commits"
+    for sha in shas:
+        assert re.fullmatch(r"[0-9a-f]{40}", sha), f"{sha!r} is not a full SHA"
+        assert git("merge-base", "--is-ancestor", sha, "HEAD").returncode == 0, (
+            f"{sha} in .git-blame-ignore-revs is not an ancestor of HEAD; list "
+            f"the squash commit on main, not the PR branch's commit"
+        )
