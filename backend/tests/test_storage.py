@@ -85,14 +85,17 @@ def s3(no_sockets):
         secret_access_key="stub-secret",
     )
     with Stubber(client) as stubber:
-        yield S3Storage(
-            endpoint_url="https://example.invalid",
-            bucket="bills",
-            region="us-east-1",
-            access_key_id="stub-key",
-            secret_access_key="stub-secret",
-            client=client,
-        ), stubber
+        yield (
+            S3Storage(
+                endpoint_url="https://example.invalid",
+                bucket="bills",
+                region="us-east-1",
+                access_key_id="stub-key",
+                secret_access_key="stub-secret",
+                client=client,
+            ),
+            stubber,
+        )
 
 
 class TestS3Storage:

@@ -107,7 +107,10 @@ def compare(gh, base: str, status: str, commits, ahead_by=None) -> None:
 
 
 def touching(gh, per_page: int, frontend=(), workflow=()) -> None:
-    gh(f"commits?sha=main&path=frontend&per_page={per_page}", [{"sha": s} for s in frontend])
+    gh(
+        f"commits?sha=main&path=frontend&per_page={per_page}",
+        [{"sha": s} for s in frontend],
+    )
     gh(
         f"commits?sha=main&path=.github/workflows/deploy-frontend.yml&per_page={per_page}",
         [{"sha": s} for s in workflow],
@@ -169,7 +172,9 @@ class TestCurrent:
         assert code == 1
 
     def test_in_flight_and_failed_deployments_are_not_live(self, gh):
-        deployments(gh, (sha(9), "in_progress"), (sha(8), "failure"), (DEPLOYED, "success"))
+        deployments(
+            gh, (sha(9), "in_progress"), (sha(8), "failure"), (DEPLOYED, "success")
+        )
         compare(gh, DEPLOYED, "identical", [])
         code, err = gh.run()
         assert code == 0, err
@@ -213,8 +218,8 @@ class TestPinnedToTheDeployWorkflow:
 
     def deploy_push_filter(self) -> tuple[list[str], list[str]]:
         text = (REPO_ROOT / ".github" / "workflows" / "deploy-frontend.yml").read_text()
-        branches = re.search(r"^\s+branches:\s*\[([^\]]*)\]", text, re.M)
-        paths = re.search(r"^\s+paths:\s*\[([^\]]*)\]", text, re.M)
+        branches = re.search(r"^\s+branches:\s*\[([^\]]*)\]", text, re.MULTILINE)
+        paths = re.search(r"^\s+paths:\s*\[([^\]]*)\]", text, re.MULTILINE)
         assert branches and paths, "deploy-frontend.yml's push filter changed shape"
 
         def items(m):
@@ -223,7 +228,7 @@ class TestPinnedToTheDeployWorkflow:
         return items(branches), items(paths)
 
     def script_value(self, name: str) -> str:
-        m = re.search(rf'^{name}="?([^"\n]*)"?$', SCRIPT.read_text(), re.M)
+        m = re.search(rf'^{name}="?([^"\n]*)"?$', SCRIPT.read_text(), re.MULTILINE)
         assert m, f"{name}= not found in {SCRIPT.name}"
         return m.group(1)
 

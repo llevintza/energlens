@@ -156,9 +156,7 @@ class TestBillsCrud:
         # newest first
         assert r.json()[0]["period_start"] == "2026-04-01"
 
-        r = await client.get(
-            url, params={"from": "2026-04-01"}, headers=auth_headers
-        )
+        r = await client.get(url, params={"from": "2026-04-01"}, headers=auth_headers)
         assert len(r.json()) == 1
 
 
@@ -271,9 +269,7 @@ class TestInvoiceIdentity:
         # A different period, so only the invoice number can be the objection.
         r = await client.post(
             url,
-            json=invoice_payload(
-                period_start="2024-12-01", period_end="2024-12-31"
-            ),
+            json=invoice_payload(period_start="2024-12-01", period_end="2024-12-31"),
             headers=auth_headers,
         )
         assert r.status_code == 409
@@ -305,9 +301,7 @@ class TestInvoiceIdentity:
         assert (
             await client.post(
                 url,
-                json=bill_payload(
-                    period_start="2024-11-01", period_end="2024-11-30"
-                ),
+                json=bill_payload(period_start="2024-11-01", period_end="2024-11-30"),
                 headers=auth_headers,
             )
         ).status_code == 201
@@ -382,9 +376,7 @@ class TestInvoiceIdentity:
             )
             assert r.status_code == 422, f"{field}={value} was accepted"
 
-    async def test_document_type_defaults_to_invoice(
-        self, client, auth_headers, place
-    ):
+    async def test_document_type_defaults_to_invoice(self, client, auth_headers, place):
         r = await client.post(
             f"/places/{place['id']}/bills",
             json=bill_payload(),

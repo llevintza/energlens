@@ -26,6 +26,7 @@ from app.worker import start_worker, stop_worker
 
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Fail the boot, not the first upload.

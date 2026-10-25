@@ -9,9 +9,10 @@ divided by prorated kWh — which reflects what was actually paid per kWh
 
 from calendar import monthrange
 from collections import defaultdict
+from collections.abc import Iterable
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
-from typing import Iterable, Protocol
+from typing import Protocol
 
 from app.schemas.series import Metric, SeriesPoint
 
@@ -75,11 +76,7 @@ def monthly_series(
     elif metric == "cost":
         raw = {k: _round(v, 2) for k, v in cost_acc.items()}
     else:  # unit_price: weighted average, only months with real consumption
-        raw = {
-            k: _round(cost_acc[k] / kwh, 4)
-            for k, kwh in kwh_acc.items()
-            if kwh > 0
-        }
+        raw = {k: _round(cost_acc[k] / kwh, 4) for k, kwh in kwh_acc.items() if kwh > 0}
 
     keys = sorted(raw)
     if month_from:

@@ -88,6 +88,4 @@ class EnerglensClient:
             return "created"
         if response.status_code == 409:
             return "skipped"
-        raise ApiError(
-            f"Upload failed ({response.status_code}): {response.text[:300]}"
-        )
+        raise ApiError(f"Upload failed ({response.status_code}): {response.text[:300]}")

@@ -131,6 +131,9 @@ def extract_directory(
 def load_cached_bills(cache_path: Path) -> list[tuple[Path, ExtractedBill]]:
     """Every bill in the cache file, without touching the PDFs or the API."""
     return [
-        (Path(entry.get("file", entry["sha256"][:12])), ExtractedBill.model_validate(entry["bill"]))
+        (
+            Path(entry.get("file", entry["sha256"][:12])),
+            ExtractedBill.model_validate(entry["bill"]),
+        )
         for entry in load_cache(cache_path).values()
     ]

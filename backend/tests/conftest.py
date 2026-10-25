@@ -160,9 +160,7 @@ async def client(db_engine, storage_root):
 
 async def register_and_login(client: AsyncClient, email: str) -> dict[str, str]:
     password = "password-123"
-    r = await client.post(
-        "/auth/register", json={"email": email, "password": password}
-    )
+    r = await client.post("/auth/register", json={"email": email, "password": password})
     assert r.status_code == 201, r.text
     r = await client.post(
         "/auth/jwt/login", data={"username": email, "password": password}

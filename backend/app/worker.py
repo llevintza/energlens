@@ -109,7 +109,9 @@ class Worker:
             logger.warning("job %s failed: %s", job.id, exc)
         except Exception as exc:
             async with self.session_maker() as session:
-                status = await jobs.retry_or_bury(session, job, f"{type(exc).__name__}: {exc}")
+                status = await jobs.retry_or_bury(
+                    session, job, f"{type(exc).__name__}: {exc}"
+                )
             logger.exception("job %s raised; now %s", job.id, status)
         else:
             async with self.session_maker() as session:

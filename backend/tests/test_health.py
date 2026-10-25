@@ -44,7 +44,9 @@ def session_override(dependency):
 def failing_session():
     class FailingSession:
         async def execute(self, *args, **kwargs):
-            raise OperationalError("SELECT 1", {}, Exception(f"connect failed: {FAKE_DSN}"))
+            raise OperationalError(
+                "SELECT 1", {}, Exception(f"connect failed: {FAKE_DSN}")
+            )
 
     async def override():
         # Only execute() raises. A stub that also blew up on teardown would turn

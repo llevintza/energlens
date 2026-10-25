@@ -5,7 +5,15 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import func, select
@@ -23,9 +31,7 @@ from app.storage import StorageBackend, StorageObjectNotFound, get_storage
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/places/{place_id}/bill-documents", tags=["bill-documents"]
-)
+router = APIRouter(prefix="/places/{place_id}/bill-documents", tags=["bill-documents"])
 
 PDF_MEDIA_TYPE = "application/pdf"
 PDF_MAGIC = b"%PDF-"

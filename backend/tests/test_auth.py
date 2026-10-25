@@ -14,9 +14,7 @@ class TestAuth:
         assert r.status_code == 200
         token = r.json()["access_token"]
 
-        r = await client.get(
-            "/users/me", headers={"Authorization": f"Bearer {token}"}
-        )
+        r = await client.get("/users/me", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 200
         assert r.json()["email"] == "new@example.com"
 

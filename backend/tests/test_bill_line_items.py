@@ -113,9 +113,7 @@ class TestLineItems:
         assert totals["energy"] == Decimal("44.61")
         assert totals["distribution"] == Decimal("51.76")
 
-    async def test_eight_decimal_unit_price_round_trips(
-        self, sessions, bill_2025_06
-    ):
+    async def test_eight_decimal_unit_price_round_trips(self, sessions, bill_2025_06):
         bill_id = uuid.UUID(bill_2025_06["id"])
         async with sessions() as session:
             session.add_all(corpus_lines(bill_id))
@@ -172,9 +170,7 @@ class TestLineItems:
         line.period_start, line.period_end = line.period_end, line.period_start
         async with sessions() as session:
             session.add(line)
-            with pytest.raises(
-                IntegrityError, match="ck_bill_line_items_period_order"
-            ):
+            with pytest.raises(IntegrityError, match="ck_bill_line_items_period_order"):
                 await session.commit()
 
 
@@ -236,9 +232,7 @@ class TestCascade:
 
         async with sessions() as session:
             for model in (BillLineItem, BillMeterReading):
-                count = await session.scalar(
-                    select(func.count()).select_from(model)
-                )
+                count = await session.scalar(select(func.count()).select_from(model))
                 assert count == 0, model.__tablename__
 
     async def test_deleting_the_account_deletes_them_too(
@@ -255,9 +249,7 @@ class TestCascade:
 
         async with sessions() as session:
             for model in (BillLineItem, BillMeterReading):
-                count = await session.scalar(
-                    select(func.count()).select_from(model)
-                )
+                count = await session.scalar(select(func.count()).select_from(model))
                 assert count == 0, model.__tablename__
 
 

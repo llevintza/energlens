@@ -16,7 +16,6 @@ and tooling use another, and nothing errors until much later.
 from pathlib import Path
 
 from app.config import Settings
-
 from tests.conftest import _read_db_env
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -75,7 +74,11 @@ class TestDatabaseIdentity:
         # The suite drops every table in PGDATABASE_TEST, and migrate-check
         # drops PGDATABASE_MIGRATIONS outright, on every run.
         env = _read_db_env()
-        names = [env["PGDATABASE"], env["PGDATABASE_TEST"], env["PGDATABASE_MIGRATIONS"]]
+        names = [
+            env["PGDATABASE"],
+            env["PGDATABASE_TEST"],
+            env["PGDATABASE_MIGRATIONS"],
+        ]
         assert len(set(names)) == 3, names
 
     def test_pgdev_does_not_hardcode_the_role(self):
