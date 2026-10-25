@@ -8,15 +8,49 @@ on:
   pull_request:
 
 # The job runs project tooling (npm ci, lint scripts), so it gets a read-only
-# token rather than the repository default.
+# token rather than the repository default. pages: read is for
+# actions/configure-pages, which reads the Pages site to derive VITE_BASE.
 permissions:
   contents: read
+  pages: read
 
 jobs:
   frontend-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # This job gates merges, so it builds the configuration deploy-frontend.yml
+      # actually ships rather than the localhost fallback — otherwise it is green
+      # precisely when the deploy is red (issue #73). Offline half only: the
+      # probe (`preflight`/`smoke`) stays in the deploy, because a merge gate
+      # that depends on Render's uptime blocks merges when Render is down.
+      #
+      # An empty value warns instead of failing. GitHub withholds secrets from
+      # pull_request runs triggered by a fork, and repository variables are
+      # reported withheld too ("Variables are not passed to workflows that are
+      # triggered by a pull request from a fork", quoted from the docs in
+      # https://github.com/orgs/community/discussions/44322; the current page,
+      # https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows,
+      # names only secrets). Either way a fork PR may see API_URL empty, and a
+      # contributor cannot fix that, so it must not fail the required check. A
+      # non-empty malformed value can only come from this repository, and fails.
+      - name: Validate API_URL without probing it
+        env:
+          # By env, never interpolated into `run:`, as in deploy-frontend.yml.
+          API_URL: ${{ vars.API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::warning::Repository variable API_URL is empty for this run (unset, or withheld from a fork pull request), so the build falls back to http://localhost:8000. Set it with: gh variable set API_URL --body https://<service>.onrender.com"
+          else
+            scripts/api.sh validate
+          fi
+
+      # Same source of VITE_BASE as deploy-frontend.yml: "/energlens" for a
+      # project site, "" behind a custom domain.
+      - uses: actions/configure-pages@v5
+        id: pages
+
       - uses: actions/setup-node@v4
         with:
           # Read from .nvmrc rather than repeated here, so CI and a local
@@ -29,11 +63,24 @@ jobs:
       # Same four steps, in the same order, as `make ci-frontend` — which is
       # lint, then typecheck, then test, then build. The job name is a required
       # status check on main, so add steps here rather than renaming the job.
-      - name: Lint, typecheck, test and build
+      #
+      # The build is its own step only so the deploy's env reaches `vite build`
+      # and nothing else. `make ci-frontend` builds without it: locally there is
+      # no repository variable to read without a network call to GitHub, and the
+      # gate must run offline.
+      - name: Lint, typecheck and test
         working-directory: frontend
         run: |
           npm ci
           npm run lint
           npm run typecheck
           npm test
-          npm run build
+
+      - name: Build with the deploy's configuration
+        working-directory: frontend
+        env:
+          # Keep in step with the Build step in deploy-frontend.yml.
+          VITE_BASE: ${{ steps.pages.outputs.base_path }}/
+          VITE_API_URL: ${{ vars.API_URL }}
+          VITE_OAUTH_PROVIDERS: ${{ vars.OAUTH_PROVIDERS }}
+        run: npm run build

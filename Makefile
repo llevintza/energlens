@@ -177,6 +177,11 @@ ci-backend: lock-check migrate-heads migrate-check test-backend test-ingest
 # Depends on test-frontend rather than relying on build-web to run tsc first, so
 # that adding a real frontend test runner to test-frontend lands in `make check`
 # automatically instead of silently escaping the gate.
+#
+# One deliberate difference from frontend-ci.yml: CI also validates the API_URL
+# repository variable offline and builds with the deploy's VITE_* env (issue
+# #73). Locally that variable is only reachable through `gh`, a network call, so
+# it stays out of the gate; `make api-preflight` checks it on demand.
 ci-frontend: lint-web test-frontend build-web
 
 ## -- deploy -----------------------------------------------------------------
