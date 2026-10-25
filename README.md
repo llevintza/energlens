@@ -394,7 +394,12 @@ Either provider's free tier is ample and neither charges for egress:
   files an issue that closes itself on the next green run. `Pages smoke test`
   re-checks the live site daily, which is what catches the *frontend* half of the
   build-time-config drift described above — the backend half is `make api-smoke`
-  / `api-smoke.yml` (OpenAPI contract, not only `/health`). See
+  / `api-smoke.yml` (OpenAPI contract, not only `/health`). The same daily run
+  also fails when a commit touching a deploy path landed on `main` and the live
+  deployment is still older than it (`scripts/pages-current.sh`): a push once
+  produced no workflow run at all
+  ([#95](https://github.com/llevintza/energlens/issues/95)), and a run that never
+  starts cannot raise its own alert. See
   [ADR-0017](docs/adr/0017-verify-the-pages-deploy.md) and
   [ADR-0019](docs/adr/0019-verify-the-api-deploy.md).
 
