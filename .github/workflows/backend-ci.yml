@@ -30,6 +30,16 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Lint (ruff)
+        run: |
+          # `make lint`, not raw ruff flags, so this step and `make check` share
+          # one definition. Synced --locked first: `uv run` inside the target
+          # would otherwise re-lock silently. Kept a step of backend-tests, not a
+          # job of its own, so no new required check name has to be registered.
+          uv sync --locked --directory backend
+          uv sync --locked --directory ingest
+          make lint
+
       - name: Migrations apply and match the models
         working-directory: backend
         env:

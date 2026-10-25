@@ -11,7 +11,6 @@ second consumer would still be safe (``FOR UPDATE SKIP LOCKED``), not so that
 one would be fast.
 """
 
-import uuid
 from datetime import timedelta
 
 from sqlalchemy import func, select, update

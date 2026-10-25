@@ -34,7 +34,9 @@ STUBS = {
 def test_stub_points_at_agents_md(stub, pointer):
     path = REPO_ROOT / stub
     assert path.is_file(), f"{stub} is missing; its harness would skip AGENTS.md"
-    assert pointer in path.read_text(), f"{stub} should point at AGENTS.md with {pointer}"
+    assert pointer in path.read_text(), (
+        f"{stub} should point at AGENTS.md with {pointer}"
+    )
 
 
 def test_cursor_rule_always_applies():
@@ -51,7 +53,9 @@ def test_gemini_loads_agents_md():
     names = settings["context"]["fileName"]
     if isinstance(names, str):
         names = [names]
-    assert "AGENTS.md" in names, ".gemini/settings.json context.fileName lacks AGENTS.md"
+    assert "AGENTS.md" in names, (
+        ".gemini/settings.json context.fileName lacks AGENTS.md"
+    )
 
 
 def test_no_gemini_md_beside_agents_md():

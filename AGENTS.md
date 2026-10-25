@@ -103,6 +103,7 @@ ones run a preflight that explains failures instead of raising
 | Set up a clone | `make setup` |
 | Start Postgres | `make db-up` |
 | **The gate — run before calling anything done** | `make check` |
+| Format and autofix the Python (ruff; `make lint` is the check) | `make fmt` |
 | One backend test | `make test-backend PYTEST_ARGS="-k currency"` |
 | New migration | `make migration m="add reference to bill"` |
 | Check migrations match the models | `make migrate-check` |

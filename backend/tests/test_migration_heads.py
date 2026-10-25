@@ -81,6 +81,7 @@ def test_the_command_line_entry_point_succeeds_on_the_real_chain():
         env={"PYTHONPATH": str(BACKEND_DIR)},
         capture_output=True,
         text=True,
+        check=False,
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.startswith("one Alembic head: ")

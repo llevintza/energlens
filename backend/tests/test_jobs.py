@@ -111,7 +111,9 @@ class TestEnqueue:
         assert again.id == first.id
         assert first.status == "queued" and first.attempts == 0
 
-    async def test_a_finished_document_can_be_queued_again(self, upload, enqueue, maker):
+    async def test_a_finished_document_can_be_queued_again(
+        self, upload, enqueue, maker
+    ):
         """Re-runnable after a prompt change — why this is not a UniqueConstraint."""
         document = await upload()
         first = await enqueue(document)
@@ -423,7 +425,9 @@ class TestLifespan:
 
 class TestSweepRoute:
     def test_absent_when_no_token_is_configured(self):
-        assert not any(getattr(r, "path", "").startswith("/internal") for r in app.routes)
+        assert not any(
+            getattr(r, "path", "").startswith("/internal") for r in app.routes
+        )
 
     def test_refuses_to_build_with_a_blank_token(self):
         with pytest.raises(ValueError):
@@ -440,7 +444,9 @@ class TestSweepRoute:
                 yield session
 
         api.dependency_overrides[get_async_session] = override
-        async with AsyncClient(transport=ASGITransport(app=api), base_url="http://t") as c:
+        async with AsyncClient(
+            transport=ASGITransport(app=api), base_url="http://t"
+        ) as c:
             yield c
 
     async def test_401_without_the_token(self, internal):
@@ -464,5 +470,11 @@ class TestSweepRoute:
         assert body["counts"]["queued"] == 2
         assert body["counts"]["claimed"] == 0
         assert set(body["counts"]) == {
-            "queued", "claimed", "running", "succeeded", "failed", "dead", "cancelled",
+            "queued",
+            "claimed",
+            "running",
+            "succeeded",
+            "failed",
+            "dead",
+            "cancelled",
         }

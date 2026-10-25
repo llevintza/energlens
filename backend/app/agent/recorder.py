@@ -28,7 +28,7 @@ import logging
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Self
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -194,7 +194,7 @@ class AgentRecorder:
 
     # --- the context manager -----------------------------------------------
 
-    async def __aenter__(self) -> "AgentRecorder":
+    async def __aenter__(self) -> Self:
         self._started_at = datetime.now(UTC)
         self._t0 = time.monotonic()
         try:

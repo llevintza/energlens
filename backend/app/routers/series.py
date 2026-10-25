@@ -33,7 +33,9 @@ def _parse_month(value: str) -> tuple[int, int]:
     return year, month
 
 
-def _month_bounds(month_from: str | None, month_to: str | None) -> tuple[date | None, date | None]:
+def _month_bounds(
+    month_from: str | None, month_to: str | None
+) -> tuple[date | None, date | None]:
     start = end = None
     if month_from:
         year, month = _parse_month(month_from)
@@ -131,7 +133,9 @@ async def compare_series(
 
     series: list[CompareSeries] = []
     for place in places:
-        bills = await _fetch_bills(session, place.id, utility_type, month_from, month_to)
+        bills = await _fetch_bills(
+            session, place.id, utility_type, month_from, month_to
+        )
         series.append(
             CompareSeries(
                 place_id=place.id,

@@ -5,7 +5,15 @@ import uuid
 from datetime import UTC, datetime, timedelta
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import RedirectResponse, StreamingResponse
 from sqlalchemy import func, select
@@ -23,9 +31,7 @@ from app.storage import StorageBackend, StorageObjectNotFound, get_storage
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/places/{place_id}/bill-documents", tags=["bill-documents"]
-)
+router = APIRouter(prefix="/places/{place_id}/bill-documents", tags=["bill-documents"])
 
 PDF_MEDIA_TYPE = "application/pdf"
 PDF_MAGIC = b"%PDF-"
@@ -98,16 +104,15 @@ async def _read_capped(file: UploadFile) -> tuple[bytes, str]:
     buffer = bytearray()
 
     while chunk := await file.read(CHUNK_SIZE):
-        if not buffer:
-            # Content-Type is whatever the client claimed. This is the file
-            # itself saying what it is, and it is the only check that catches a
-            # .png renamed .pdf — a browser labels that application/pdf from the
-            # extension alone.
-            if not chunk.startswith(PDF_MAGIC):
-                raise HTTPException(
-                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    detail="Not a PDF: the file does not start with %PDF-",
-                )
+        # Content-Type is whatever the client claimed. This is the file itself
+        # saying what it is, and it is the only check that catches a .png
+        # renamed .pdf — a browser labels that application/pdf from the
+        # extension alone.
+        if not buffer and not chunk.startswith(PDF_MAGIC):
+            raise HTTPException(
+                status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+                detail="Not a PDF: the file does not start with %PDF-",
+            )
         buffer.extend(chunk)
         if len(buffer) > settings.upload_max_bytes:
             raise _too_large()

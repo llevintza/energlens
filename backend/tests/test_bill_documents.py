@@ -55,7 +55,8 @@ class TestUpload:
         assert first.status_code == 201
 
         second = await client.post(
-            docs_url(place), files=pdf_upload(data, name="renamed.pdf"),
+            docs_url(place),
+            files=pdf_upload(data, name="renamed.pdf"),
             headers=auth_headers,
         )
         # 200, not 201: the second upload created nothing.
@@ -274,9 +275,7 @@ class TestDownload:
         Only the file is gone.
         """
         doc = (
-            await client.post(
-                docs_url(place), files=pdf_upload(), headers=auth_headers
-            )
+            await client.post(docs_url(place), files=pdf_upload(), headers=auth_headers)
         ).json()
         for path in stored_files(storage_root):
             path.unlink()
@@ -296,9 +295,7 @@ class TestDelete:
         self, client, auth_headers, place, storage_root
     ):
         doc = (
-            await client.post(
-                docs_url(place), files=pdf_upload(), headers=auth_headers
-            )
+            await client.post(docs_url(place), files=pdf_upload(), headers=auth_headers)
         ).json()
         assert len(stored_files(storage_root)) == 1
 
@@ -313,9 +310,7 @@ class TestDelete:
         self, client, auth_headers, place, storage_root
     ):
         doc = (
-            await client.post(
-                docs_url(place), files=pdf_upload(), headers=auth_headers
-            )
+            await client.post(docs_url(place), files=pdf_upload(), headers=auth_headers)
         ).json()
         bill = await client.post(
             f"/places/{place['id']}/bills",
@@ -398,9 +393,7 @@ class TestDocumentIsolation:
     ):
         """404 rather than 403, so ids cannot be probed for existence."""
         doc = (
-            await client.post(
-                docs_url(place), files=pdf_upload(), headers=auth_headers
-            )
+            await client.post(docs_url(place), files=pdf_upload(), headers=auth_headers)
         ).json()
         url = f"{docs_url(place)}/{doc['id']}"
 
@@ -429,9 +422,7 @@ class TestDocumentIsolation:
         from tests.conftest import PLACE_PAYLOAD
 
         victim_doc = (
-            await client.post(
-                docs_url(place), files=pdf_upload(), headers=auth_headers
-            )
+            await client.post(docs_url(place), files=pdf_upload(), headers=auth_headers)
         ).json()
 
         mine = (

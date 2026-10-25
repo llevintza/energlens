@@ -38,7 +38,9 @@ def api():
 
     class Handler(BaseHTTPRequestHandler):
         def do_GET(self):
-            doc = {"/health": state["health"], "/openapi.json": state["openapi"]}.get(self.path)
+            doc = {"/health": state["health"], "/openapi.json": state["openapi"]}.get(
+                self.path
+            )
             payload = json.dumps(doc).encode()
             self.send_response(200 if doc is not None else 404)
             self.send_header("Content-Type", "application/json")
@@ -133,6 +135,7 @@ def run(repo_root: Path, api, cmd: str = "smoke", **env: str):
         text=True,
         env=environ,
         timeout=60,
+        check=False,
     )
 
 
@@ -168,7 +171,9 @@ class TestSmokeWaitsForTheCommit:
         assert r.returncode == 1
         assert "Deploy is stale" in r.stderr
         assert c["backend_v1"] in r.stderr and c["backend_v2"] in r.stderr
-        assert "openapi ok" not in r.stdout, "must not pass the contract on a stale commit"
+        assert "openapi ok" not in r.stdout, (
+            "must not pass the contract on a stale commit"
+        )
 
     def test_fails_as_stale_when_health_names_no_commit(self, repo, api):
         """What production serves today (#97): a revision from before the field."""

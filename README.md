@@ -85,6 +85,8 @@ make test-backend              # pytest; PYTEST_ARGS="-k currency" to narrow
 make test-ingest               # never calls a paid API
 make test-frontend             # vitest, after tsc -b
 make typecheck                 # just the frontend typecheck
+make lint                      # ruff check + format --check on backend/ and ingest/
+make fmt                       # ruff: apply the formatting and autofixes lint asks for
 ```
 
 `make test-backend` needs the `energlens_test` database. If it is missing, or

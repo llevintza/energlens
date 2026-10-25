@@ -45,7 +45,9 @@ async def steps(maker, run_id) -> list[AgentStep]:
         return list(
             (
                 await session.scalars(
-                    select(AgentStep).where(AgentStep.run_id == run_id).order_by(AgentStep.seq)
+                    select(AgentStep)
+                    .where(AgentStep.run_id == run_id)
+                    .order_by(AgentStep.seq)
                 )
             ).all()
         )
@@ -168,12 +170,22 @@ async def test_steps_are_ordered_and_gapless_and_detail_is_truncated(maker):
             tool_name="get_page_text",
             detail={"input": {"page": 1}, "nested": [{"text": huge}], "obj": object()},
         )
-        rec.step(kind="tool_result", tool_name="get_page_text", ok=True, detail={"text": huge})
+        rec.step(
+            kind="tool_result",
+            tool_name="get_page_text",
+            ok=True,
+            detail={"text": huge},
+        )
         rec.step(kind="assistant")
 
     saved = await steps(maker, rec.run_id)
     assert [s.seq for s in saved] == [1, 2, 3, 4]
-    assert [s.kind for s in saved] == ["assistant", "tool_use", "tool_result", "assistant"]
+    assert [s.kind for s in saved] == [
+        "assistant",
+        "tool_use",
+        "tool_result",
+        "assistant",
+    ]
 
     text = saved[2].detail["text"]
     assert len(text) < DETAIL_MAX_CHARS + 50
@@ -252,4 +264,3 @@ async def test_deleting_a_run_deletes_its_steps_and_scores(maker):
 )
 def test_classify_error(exc, kind):
     assert classify_error(exc) == kind
-

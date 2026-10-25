@@ -11,9 +11,10 @@ mismatch.
 """
 
 from collections import defaultdict
+from collections.abc import Iterable
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Iterable, Protocol
+from typing import Protocol
 
 # Strictly less than: a cent either way is rounding on the provider's own unit
 # price, not a mistake. Matches ArithmeticCheck.tsx's `< 0.015`.
