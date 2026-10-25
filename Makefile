@@ -34,11 +34,10 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
 
 # Only names with rules below. A phony target with no recipe exits 0 while
 # doing nothing, which on the repo's authoritative command surface reads as
-# "it passed"; a missing target at least fails loudly. fmt/lint/lint-py arrive
-# with the linters that back them.
+# "it passed"; a missing target at least fails loudly.
 .PHONY: help setup env db-up db-down db-ensure db-reset db-shell db-preflight \
         migrate migration migrate-check migrate-heads lock-check seed dev-api dev-web \
-        typecheck lint-web build-web \
+        fmt lint typecheck lint-web build-web \
         test test-backend test-ingest test-frontend \
         check ci-backend ci-frontend api-preflight api-smoke smoke-web clean
 
@@ -130,6 +129,22 @@ dev-web: $(NODE_STAMP) ## Run the SPA at http://localhost:5173
 
 ## -- quality ----------------------------------------------------------------
 
+# Each package runs its own pinned ruff; both read the root ruff.toml. `lint`
+# changes nothing, so it can gate; `fmt` is the fix it points you to. fmt's
+# --exit-zero lets formatting and the second package still run when something
+# needs a hand fix; ruff lists it, and `make lint` keeps failing until it's fixed.
+fmt: ## Format and autofix the Python in backend/ and ingest/ with ruff
+	$(BACKEND) ruff check --fix --exit-zero .
+	$(BACKEND) ruff format .
+	$(INGEST) ruff check --fix --exit-zero .
+	$(INGEST) ruff format .
+
+lint: ## Lint the Python with ruff (check + format --check); `make fmt` fixes
+	$(BACKEND) ruff check .
+	$(BACKEND) ruff format --check .
+	$(INGEST) ruff check .
+	$(INGEST) ruff format --check .
+
 typecheck: $(NODE_STAMP) ## Typecheck the frontend
 	$(WEB) npm run typecheck
 
@@ -169,9 +184,10 @@ lock-check: ## Assert both uv.lock files still match their pyproject.toml
 	$(UV) lock --check --directory $(ROOT)/backend
 	$(UV) lock --check --directory $(ROOT)/ingest
 
-# Same order as backend-ci.yml: the migration gate runs before the suites.
-# migrate-heads leads because it needs no database; in CI, env.py runs it.
-ci-backend: lock-check migrate-heads migrate-check test-backend test-ingest
+# Same order as backend-ci.yml: lint, then the migration gate, then the suites.
+# lint and migrate-heads lead because they need no database; in CI, env.py runs
+# migrate-heads.
+ci-backend: lock-check lint migrate-heads migrate-check test-backend test-ingest
 
 # Lint runs first: it is the fastest of the four, and the cheapest to fail on.
 # Depends on test-frontend rather than relying on build-web to run tsc first, so

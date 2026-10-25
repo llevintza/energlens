@@ -1,0 +1,38 @@
+# Ruff settings for both Python packages, backend/ and ingest/ (issue #81).
+#
+# One file at the root rather than a [tool.ruff] section in each pyproject.toml:
+# ruff walks up from each file it checks and stops at the first config it finds,
+# so as long as neither pyproject.toml has a [tool.ruff] table, both packages
+# resolve to this one and cannot drift apart. The ruff *version* is pinned per
+# package (dev group, `==`), because formatter output changes between releases;
+# backend/tests/test_toolchain.py asserts the two pins agree.
+#
+# `make lint` checks, `make fmt` writes. Both run each package's own ruff.
+
+target-version = "py312"
+
+# Paths below are relative to this file. Listing the package roots is what
+# makes import sorting see `app` and `energlens_ingest` as first-party.
+src = ["backend", "ingest"]
+
+[lint]
+# No `select`: ruff's own default set (as of the pinned 0.17, a curated set
+# spanning F, E, I, UP, B, SIM, PIE, ASYNC, PL*, FURB, RUF and more). Adopting
+# it changed no behaviour: the import sorting and pyupgrade hits were autofixed,
+# and the handful of the rest were fixed by hand. Exceptions are kept below, each
+# for a rule that would otherwise need suppressing all over the codebase.
+ignore = [
+    # Decimal("250") -> Decimal(250). Equal values, but money and quantities in
+    # this codebase are written as strings throughout, so that Decimal("1")
+    # sits beside Decimal("0.1325") rather than reading like a float literal.
+    "FURB157",
+]
+
+[lint.flake8-bugbear]
+# B008 (call in argument default) is FastAPI's dependency-injection idiom.
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Query"]
+
+[lint.isort]
+# backend/alembic/ is the migrations directory, not the package; without this,
+# `from alembic import op` is sorted in with `app` as first-party.
+known-third-party = ["alembic"]
