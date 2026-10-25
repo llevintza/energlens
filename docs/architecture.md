@@ -216,7 +216,7 @@ flowchart LR
     CI -->|frontend-build| T2["tsc -b · vite build"]
     T1 & T2 --> M["Squash-merge to main<br/>(protect-main ruleset)"]
     M --> D1["Render auto-deploy<br/>alembic upgrade head → seed → uvicorn"]
-    M -->|"backend/** or render.yaml"| AS["api-smoke.yml<br/>health + OpenAPI contract"]
+    M -->|"backend/** or render.yaml"| AS["api-smoke.yml<br/>wait for the commit → OpenAPI contract"]
     M -.->|"only if frontend/** changed"| D2["deploy-frontend.yml<br/>verify API_URL → vite build<br/>→ GitHub Pages"]
     D2 --> S["smoke: fetch the published page,<br/>assert its bundle resolves"]
     CRON(["daily cron"]) --> S
@@ -249,8 +249,11 @@ under `frontend/**` changes. The daily `Pages smoke test` closes the *frontend* 
 that window — it re-checks the published bundle, not the API that bundle points at.
 The backend half is `make api-smoke` / `api-smoke.yml`
 ([ADR-0019](adr/0019-verify-the-api-deploy.md)): `/health` alone missed a stale revision
-in [#48](https://github.com/llevintza/energlens/issues/48), so smoke also asserts the
-OpenAPI contract.
+in [#48](https://github.com/llevintza/energlens/issues/48), and the OpenAPI contract that
+was added for it held on the previous revision too
+([#91](https://github.com/llevintza/energlens/issues/91)). So smoke waits until `/health`
+names a commit containing the newest `backend/` commit, then asserts the contract
+([ADR-0022](adr/0022-prove-the-deployed-commit.md)).
 
 **Nothing on the right-hand side is a required check, and nothing can be** — those gate
 pull requests, and everything past the merge runs after the PR is gone. A red deploy
