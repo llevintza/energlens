@@ -88,6 +88,13 @@ same `main` and each add one migration. Each PR has one head and passes CI on
 its own. After both merge, `main` has two heads, both pointing at the same
 parent, and the next boot fails.
 
+Nothing in CI catches this before the second merge: each PR is green against
+the `main` it branched from, and `test_the_repository_has_exactly_one_head`
+only fails on `main` afterwards — by which time Render may already be booting
+the broken commit. Requiring branches to be up to date before merging (or a
+merge queue) on `main` would close that gap. Until then, whoever merges a PR
+that adds a migration updates it from `main` first and runs `make migrate-heads`.
+
 `make migrate-heads` reads `alembic/versions/` (no database needed) and fails
 with the heads, their parents and their files. `alembic/env.py` runs the same
 check, so CI's migration step and the Render boot log print the same
@@ -105,6 +112,11 @@ On your branch, after merging or rebasing `main` in:
    one, and the result must still match the models. If both migrations touch
    the same table, read them together: the order is now fixed.
 4. Push a new commit.
+
+The check runs from `alembic/env.py`, so it also blocks `alembic merge`,
+`stamp` and `downgrade` while there are two heads. That is deliberate — the
+fix here is a repoint, not a merge revision (rule 1) — but a hand recovery can
+opt out for one command with `alembic -x allow_multiple_heads=1 <command>`.
 
 If both heads have already reached `main`, the API is not booting: open a PR
 that does the same repoint to the migration that merged **last**. It has never

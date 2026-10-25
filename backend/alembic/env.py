@@ -15,7 +15,13 @@ config = context.config
 # Before Alembic resolves "head", whose own error on two heads names the symptom
 # but not the fix. This is the message CI's migration step and the Render boot
 # log show; `make migrate-heads` gives it without a database.
-if problem := heads_problem(context.script):
+#
+# It guards every command that loads env.py, not only `upgrade head`, so a
+# deliberate recovery (`stamp`, `downgrade`, `upgrade <rev>`) opts out with
+# `alembic -x allow_multiple_heads=1 ...`. Nothing in the repo passes it.
+if not context.get_x_argument(as_dictionary=True).get("allow_multiple_heads") and (
+    problem := heads_problem(context.script)
+):
     raise SystemExit(problem)
 
 if config.config_file_name is not None:
