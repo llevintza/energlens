@@ -17,6 +17,7 @@ energlens-ingest = "energlens_ingest.cli:app"
 [dependency-groups]
 dev = [
     "pytest>=8.0",
+    "ruff==0.17.2",
 ]
 
 [tool.pytest.ini_options]

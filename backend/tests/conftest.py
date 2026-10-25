@@ -103,7 +103,10 @@ def pytest_configure(config):
     if os.environ.get("ENERGLENS_TEST_DATABASE_URL") or not _DB_SH.exists():
         return
     result = subprocess.run(
-        [str(_DB_SH), "preflight", "test"], capture_output=True, text=True
+        [str(_DB_SH), "preflight", "test"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.exit(result.stderr.rstrip() or "database preflight failed", returncode=1)
@@ -160,9 +163,7 @@ async def client(db_engine, storage_root):
 
 async def register_and_login(client: AsyncClient, email: str) -> dict[str, str]:
     password = "password-123"
-    r = await client.post(
-        "/auth/register", json={"email": email, "password": password}
-    )
+    r = await client.post("/auth/register", json={"email": email, "password": password})
     assert r.status_code == 201, r.text
     r = await client.post(
         "/auth/jwt/login", data={"username": email, "password": password}

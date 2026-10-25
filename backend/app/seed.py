@@ -66,9 +66,7 @@ def _make_bills(
         first = date(year, month, 1)
         if day_offset:
             period_start = first + timedelta(days=day_offset - 1)
-            period_end = period_start + timedelta(
-                days=monthrange(year, month)[1] - 1
-            )
+            period_end = period_start + timedelta(days=monthrange(year, month)[1] - 1)
         else:
             period_start = first
             period_end = date(year, month, monthrange(year, month)[1])
@@ -167,9 +165,7 @@ async def seed() -> None:
             _make_bills(second, 45, 90, 0.65, 0.008, 12.0, "Electrica Furnizare", 15)
         )
         await session.commit()
-        print(
-            f"Seeded {DEMO_EMAIL} / {DEMO_PASSWORD} with 2 places × {MONTHS} bills"
-        )
+        print(f"Seeded {DEMO_EMAIL} / {DEMO_PASSWORD} with 2 places × {MONTHS} bills")
 
 
 if __name__ == "__main__":

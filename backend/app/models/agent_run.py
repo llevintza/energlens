@@ -68,7 +68,9 @@ class AgentRun(Base):
         CheckConstraint(_in("kind", RUN_KINDS), name="ck_agent_runs_kind"),
         CheckConstraint(_in("status", RUN_STATUSES), name="ck_agent_runs_status"),
         CheckConstraint(_in("effort", EFFORTS), name="ck_agent_runs_effort"),
-        CheckConstraint(_in("error_kind", ERROR_KINDS), name="ck_agent_runs_error_kind"),
+        CheckConstraint(
+            _in("error_kind", ERROR_KINDS), name="ck_agent_runs_error_kind"
+        ),
         Index("ix_agent_runs_started_at", "started_at"),
         Index("ix_agent_runs_is_eval_started", "is_eval", "started_at"),
     )

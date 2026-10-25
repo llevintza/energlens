@@ -1,8 +1,8 @@
 """energlens-ingest — extract bill data from PDFs and push it to the API.
 
-    energlens-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
-    energlens-ingest upload  --cache extracted.jsonl --place-id <uuid>
-    energlens-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
+energlens-ingest extract --dir ./bills --cache extracted.jsonl [--dry-run]
+energlens-ingest upload  --cache extracted.jsonl --place-id <uuid>
+energlens-ingest run     --dir ./bills --place-id <uuid>       # extract + upload
 """
 
 from pathlib import Path
@@ -25,9 +25,7 @@ app = typer.Typer(help=__doc__, add_completion=False)
 console = Console()
 
 DirOpt = Annotated[Path, typer.Option("--dir", help="Directory of bill PDFs")]
-CacheOpt = Annotated[
-    Path, typer.Option("--cache", help="JSONL extraction cache file")
-]
+CacheOpt = Annotated[Path, typer.Option("--cache", help="JSONL extraction cache file")]
 PlaceOpt = Annotated[str, typer.Option("--place-id", help="Target place UUID")]
 ApiOpt = Annotated[
     str, typer.Option("--api-url", envvar=["ENERGLENS_API_URL", "ET_API_URL"])
@@ -39,10 +37,15 @@ def _render_table(rows: list[tuple[str, ExtractedBill, list]]) -> None:
     for column in ("File", "Period", "kWh", "Unit price", "Total", "Cur", "Issues"):
         table.add_column(column)
     for filename, bill, issues in rows:
-        issue_text = "; ".join(
-            f"[red]{i.message}[/red]" if i.level == "error" else f"[yellow]{i.message}[/yellow]"
-            for i in issues
-        ) or "[green]ok[/green]"
+        issue_text = (
+            "; ".join(
+                f"[red]{i.message}[/red]"
+                if i.level == "error"
+                else f"[yellow]{i.message}[/yellow]"
+                for i in issues
+            )
+            or "[green]ok[/green]"
+        )
         table.add_row(
             filename,
             f"{bill.period_start} → {bill.period_end}",
@@ -146,7 +149,9 @@ def _upload(place_id: str, api_url: str, build_rows) -> None:
     rows = build_rows(place["currency_code"])
     _render_table(rows)
 
-    errored = [name for name, _, issues in rows if any(i.level == "error" for i in issues)]
+    errored = [
+        name for name, _, issues in rows if any(i.level == "error" for i in issues)
+    ]
     if errored:
         console.print(
             f"[red]Not uploading — fix errors first in: {', '.join(errored)}[/red]"
@@ -157,11 +162,13 @@ def _upload(place_id: str, api_url: str, build_rows) -> None:
     for filename, bill, _ in rows:
         outcome = api.create_bill(place_id, to_api_payload(bill, filename))
         counts[outcome] += 1
-        marker = "[green]created[/green]" if outcome == "created" else "[dim]skipped (duplicate)[/dim]"
+        marker = (
+            "[green]created[/green]"
+            if outcome == "created"
+            else "[dim]skipped (duplicate)[/dim]"
+        )
         console.print(f"  {filename}: {marker}")
-    console.print(
-        f"Done: {counts['created']} created, {counts['skipped']} skipped."
-    )
+    console.print(f"Done: {counts['created']} created, {counts['skipped']} skipped.")
 
 
 if __name__ == "__main__":

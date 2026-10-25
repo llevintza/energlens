@@ -36,7 +36,9 @@ class BillMeterReading(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     # Named by hand: Base configures no naming convention.
     bill_id: Mapped[uuid.UUID] = mapped_column(
-        ForeignKey("bills.id", ondelete="CASCADE", name="fk_bill_meter_readings_bill_id")
+        ForeignKey(
+            "bills.id", ondelete="CASCADE", name="fk_bill_meter_readings_bill_id"
+        )
     )
     # The EU point-of-delivery id: RO001E107927758. The stable identity of a
     # connection point across supplier changes, when the bills look nothing alike.

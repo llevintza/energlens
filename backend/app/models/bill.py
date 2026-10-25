@@ -44,20 +44,18 @@ class ReadMethod(StrEnum):
     apparent consumption spike, so this is the column that stops a chart lying.
     """
 
-    ACTUAL = "actual"                  # the distributor read the meter
-    SELF_READ = "self_read"            # "Autocitire"
-    ESTIMATED = "estimated"            # "Estimare"
+    ACTUAL = "actual"  # the distributor read the meter
+    SELF_READ = "self_read"  # "Autocitire"
+    ESTIMATED = "estimated"  # "Estimare"
     REGULARISATION = "regularisation"  # "Regularizare"
-    MIXED = "mixed"                    # "Regularizare + Autocitire" — printed as such
+    MIXED = "mixed"  # "Regularizare + Autocitire" — printed as such
 
 
 class Bill(Base):
     __tablename__ = "bills"
     __table_args__ = (
         CheckConstraint("period_end >= period_start", name="ck_bills_period_order"),
-        CheckConstraint(
-            "source IN ('manual', 'script', 'ai')", name="ck_bills_source"
-        ),
+        CheckConstraint("source IN ('manual', 'script', 'ai')", name="ck_bills_source"),
         CheckConstraint(
             "document_type IN ('invoice', 'credit_note')",
             name="ck_bills_document_type",

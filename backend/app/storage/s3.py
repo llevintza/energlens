@@ -64,11 +64,15 @@ class S3Storage:
         # `client` is the one seam the tests need: botocore's Stubber wraps a
         # real client object, and injecting it here keeps `make check` off the
         # network without mocking out any of our own code.
-        self._client = client if client is not None else build_client(
-            endpoint_url=endpoint_url,
-            region=region,
-            access_key_id=access_key_id,
-            secret_access_key=secret_access_key,
+        self._client = (
+            client
+            if client is not None
+            else build_client(
+                endpoint_url=endpoint_url,
+                region=region,
+                access_key_id=access_key_id,
+                secret_access_key=secret_access_key,
+            )
         )
 
     def _is_missing(self, exc: Exception) -> bool:

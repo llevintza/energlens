@@ -18,7 +18,9 @@ runner = CliRunner()
 
 def test_entry_point_resolves_to_the_cli():
     (script,) = [
-        ep for ep in entry_points(group="console_scripts") if ep.name == "energlens-ingest"
+        ep
+        for ep in entry_points(group="console_scripts")
+        if ep.name == "energlens-ingest"
     ]
     assert script.load() is app
 
@@ -45,7 +47,14 @@ def test_dry_run_extract_makes_no_api_calls(tmp_path, monkeypatch):
 
     result = runner.invoke(
         app,
-        ["extract", "--dir", str(tmp_path), "--cache", str(tmp_path / "c.jsonl"), "--dry-run"],
+        [
+            "extract",
+            "--dir",
+            str(tmp_path),
+            "--cache",
+            str(tmp_path / "c.jsonl"),
+            "--dry-run",
+        ],
     )
 
     assert result.exit_code == 0
@@ -62,8 +71,14 @@ def test_env_credentials_accept_both_namespaces(monkeypatch):
 
 
 def test_login_without_credentials_names_the_current_env_vars(monkeypatch):
-    for name in ("ENERGLENS_TOKEN", "ENERGLENS_EMAIL", "ENERGLENS_PASSWORD",
-                 "ET_TOKEN", "ET_EMAIL", "ET_PASSWORD"):
+    for name in (
+        "ENERGLENS_TOKEN",
+        "ENERGLENS_EMAIL",
+        "ENERGLENS_PASSWORD",
+        "ET_TOKEN",
+        "ET_EMAIL",
+        "ET_PASSWORD",
+    ):
         monkeypatch.delenv(name, raising=False)
 
     with pytest.raises(ApiError, match="ENERGLENS_EMAIL"):
@@ -81,6 +96,6 @@ def test_cache_loader_round_trips(tmp_path):
         '"currency_code": "EUR"}}\n'
     )
 
-    (path, bill), = load_cached_bills(cache)
+    ((path, bill),) = load_cached_bills(cache)
     assert path.name == "jan.pdf"
     assert bill.currency_code == "EUR"

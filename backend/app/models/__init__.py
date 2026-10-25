@@ -9,6 +9,16 @@ from app.models.place import Place
 from app.models.user import OAuthAccount, User
 
 __all__ = [
-    "AgentRun", "AgentScore", "AgentStep", "Base", "Bill", "BillDocument",
-    "BillJob", "BillLineItem", "BillMeterReading", "OAuthAccount", "Place", "User",
+    "AgentRun",
+    "AgentScore",
+    "AgentStep",
+    "Base",
+    "Bill",
+    "BillDocument",
+    "BillJob",
+    "BillLineItem",
+    "BillMeterReading",
+    "OAuthAccount",
+    "Place",
+    "User",
 ]
