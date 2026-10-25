@@ -112,9 +112,13 @@ app.include_router(series_router)
 # the platform polls it on a schedule. Touching Neon here would make every probe
 # after an idle gap pay a scale-to-zero cold start, and a slow or suspended
 # database would then read as a dead process and get the service restarted.
+#
+# `commit` is what lets scripts/api.sh smoke tell a finished deploy from the
+# revision before it (issue #91): every other field it can see is identical on
+# both. It is fixed for the life of the process, so this stays a static probe.
 @app.get("/health")
 async def health() -> dict[str, str]:
-    return {"status": "ok"}
+    return {"status": "ok", "commit": settings.render_git_commit or "unknown"}
 
 
 # The readiness half, kept off the platform's health check path. A green /health
