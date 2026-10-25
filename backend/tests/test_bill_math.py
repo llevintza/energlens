@@ -95,6 +95,12 @@ class TestReconcile:
         assert reconcile(FakeBill("10.015"), lines).within_tolerance is False
         assert reconcile(FakeBill("10.014"), lines).within_tolerance is True
 
+    def test_a_vat_line_does_not_count_against_the_net(self):
+        lines = [*LINES_2025_06, FakeLine("vat", "22.48")]
+        result = reconcile(FakeBill("118.33"), lines)
+        assert result.computed_net == Decimal("118.33")
+        assert result.within_tolerance is True
+
     def test_no_stated_net_is_unknown_not_a_failure(self):
         result = reconcile(FakeBill(None), LINES_2025_06)
         assert result.computed_net == Decimal("118.33")

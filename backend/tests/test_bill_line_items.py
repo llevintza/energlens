@@ -17,6 +17,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from app.models import Bill, BillLineItem, BillMeterReading
+from app.models.bill import ReadMethod
 from app.models.bill_line_item import ChargeKind
 from app.schemas.bill_line_item import BillLineItemRead, ChargeKindLiteral
 from app.services.bill_math import by_charge_kind, reconcile
@@ -278,3 +279,17 @@ class TestTaxonomyAgrees:
         union = re.search(r"export type ChargeKind =([^/]*?)\n\n", ts)
         assert union, "ChargeKind union not found in frontend/src/api/types.ts"
         assert re.findall(r"'(\w+)'", union.group(1)) == enum_values
+
+    def test_meter_reading_read_method_matches_bills(self):
+        """ck_bill_meter_readings_read_method repeats ck_bills_read_method's list."""
+
+        def values(model, name):
+            check = next(c for c in model.__table__.constraints if c.name == name)
+            return re.findall(r"'(\w+)'", str(check.sqltext))
+
+        enum_values = [method.value for method in ReadMethod]
+        assert values(Bill, "ck_bills_read_method") == enum_values
+        assert (
+            values(BillMeterReading, "ck_bill_meter_readings_read_method")
+            == enum_values
+        )

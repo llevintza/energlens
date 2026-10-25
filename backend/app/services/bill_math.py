@@ -52,7 +52,14 @@ def line_total(items: Iterable[LineItemLike]) -> Decimal:
 
 
 def reconcile(bill: BillLike, items: Iterable[LineItemLike]) -> Reconciliation:
-    computed = line_total(items)
+    """Check the charge lines against the bill's stated net.
+
+    ``vat`` lines are left out: ``bills.net_amount`` is before VAT, which lives
+    in ``tax_amount``. Most layouts print VAT only in the totals, but where an
+    extractor writes it as a line of its own, counting it would fail the net
+    check by exactly the VAT.
+    """
+    computed = line_total(item for item in items if item.charge_kind != "vat")
     stated = bill.net_amount
     if stated is None:
         return Reconciliation(computed, None, None, None)

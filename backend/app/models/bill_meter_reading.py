@@ -23,7 +23,8 @@ class BillMeterReading(Base):
     __tablename__ = "bill_meter_readings"
     __table_args__ = (
         # Same values as ck_bills_read_method — the enum is ReadMethod in
-        # app/models/bill.py, shared rather than redefined.
+        # app/models/bill.py. The list is repeated here, and
+        # tests/test_bill_line_items.py fails if the two drift.
         CheckConstraint(
             "read_method IN ('actual', 'self_read', 'estimated', "
             "'regularisation', 'mixed')",
