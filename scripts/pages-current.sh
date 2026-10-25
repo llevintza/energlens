@@ -59,6 +59,8 @@ api() {
 # ones before it `inactive`, so the first `success` is the one being served.
 # Assigned before the loop, not inside `for … in $(…)`: set -e does not see a
 # failed command substitution in a word list, and would loop over nothing.
+# `per_page=1` reads the latest status because GitHub lists a deployment's
+# statuses newest first; that ordering is documented, but this relies on it.
 deployments="$(api "deployments?environment=github-pages&per_page=30" '.[] | "\(.id):\(.sha)"')"
 DEPLOYED=""
 for line in $deployments; do
@@ -79,7 +81,11 @@ say "pages-current: live deployment is $DEPLOYED"
 
 # One request: status, ahead_by, then the sha and committer time (epoch
 # seconds) of each commit main has that the deployment does not, oldest first.
-# For a squash merge the committer time is the moment it landed on main.
+# For a squash merge the committer time is the moment it landed on main — and
+# main is squash-only, so that is the grace clock. A merge commit would also
+# list the branch's own commits, with committer times that can be days old, and
+# could fail inside the grace window; switch to first-parent landing times if
+# merge commits are ever allowed.
 compare="$(api "compare/$DEPLOYED...$BRANCH" '.status, .ahead_by, (.commits[] | "\(.sha):\(.commit.committer.date | fromdateiso8601)")')"
 status="$(printf '%s\n' "$compare" | sed -n 1p)"
 ahead_by="$(printf '%s\n' "$compare" | sed -n 2p)"
@@ -108,7 +114,12 @@ listed="$(printf '%s\n' "$undeployed" | grep -c . || true)"
 
 # Commits on main that touch a deploy path. Only the ones newer than the live
 # deployment matter, and those are among the $ahead_by newest.
+# The API caps a page at 100. Beyond that the listing can miss older relevant
+# commits, which still fails correctly — something newer is undeployed too —
+# but the count and the oldest are only a lower bound, and the message says so.
 per_page=$((ahead_by < 100 ? ahead_by : 100))
+at_least=""
+[ "$ahead_by" -le 100 ] || at_least="at least "
 relevant=""
 for path in $DEPLOY_PATHS; do
   touched="$(api "commits?sha=$BRANCH&path=$path&per_page=$per_page" '.[].sha')"
@@ -145,8 +156,8 @@ if [ "$age" -lt "$grace" ]; then
 fi
 
 die "error: the live site is behind $BRANCH.
-     $count commit(s) touching the deploy paths are not deployed; the oldest,
-     $oldest, landed $((age / 60)) min ago.
+     $at_least$count commit(s) touching the deploy paths are not deployed; the oldest
+     listed, $oldest, landed $((age / 60)) min ago.
      Live deployment : $DEPLOYED
      Either no deploy run was created for the push (issue #95), or every run
      since has failed — check the Actions tab for 'Deploy frontend to GitHub Pages'.
