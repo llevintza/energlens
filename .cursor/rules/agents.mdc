@@ -1,0 +1,8 @@
+---
+description: Points at AGENTS.md, the single source of truth for agent instructions
+alwaysApply: true
+---
+
+Read `AGENTS.md` at the repository root before doing anything. It is the single
+source of truth for this repository's agent instructions; this rule only points
+at it, so nothing belongs here except that pointer.
