@@ -135,6 +135,7 @@ def run(repo_root: Path, api, cmd: str = "smoke", **env: str):
         text=True,
         env=environ,
         timeout=60,
+        check=False,
     )
 
 

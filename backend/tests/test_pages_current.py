@@ -68,6 +68,7 @@ def gh(tmp_path):
             ["sh", str(SCRIPT)],
             capture_output=True,
             text=True,
+            check=False,
             env={
                 "PATH": f"{bin_dir}{os.pathsep}{os.environ['PATH']}",
                 "FIXTURES": str(fixtures),

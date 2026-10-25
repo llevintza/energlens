@@ -103,7 +103,10 @@ def pytest_configure(config):
     if os.environ.get("ENERGLENS_TEST_DATABASE_URL") or not _DB_SH.exists():
         return
     result = subprocess.run(
-        [str(_DB_SH), "preflight", "test"], capture_output=True, text=True
+        [str(_DB_SH), "preflight", "test"],
+        capture_output=True,
+        text=True,
+        check=False,
     )
     if result.returncode != 0:
         pytest.exit(result.stderr.rstrip() or "database preflight failed", returncode=1)
