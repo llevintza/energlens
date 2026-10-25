@@ -7,9 +7,16 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from app.config import settings
+from app.migration_heads import heads_problem
 from app.models import Base
 
 config = context.config
+
+# Before Alembic resolves "head", whose own error on two heads names the symptom
+# but not the fix. This is the message CI's migration step and the Render boot
+# log show; `make migrate-heads` gives it without a database.
+if problem := heads_problem(context.script):
+    raise SystemExit(problem)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
