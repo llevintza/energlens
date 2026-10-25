@@ -10,7 +10,12 @@ from pathlib import Path
 import pytest
 
 from app.agent import regions
-from app.agent.regions import PROFILES_DIR, ProfileRegistryError, load_profiles, select_profile
+from app.agent.regions import (
+    PROFILES_DIR,
+    ProfileRegistryError,
+    load_profiles,
+    select_profile,
+)
 
 
 def test_ro_ppc_ships_and_is_selected_by_provider():
@@ -33,7 +38,9 @@ def test_a_second_profile_needs_no_python(tmp_path):
     for path in PROFILES_DIR.iterdir():
         if path.is_file():
             (tmp_path / path.name).write_text(path.read_text())
-    (tmp_path / "pt_edp.md").write_text("# Region profile: Portugal — EDP\n\n`Termo fixo` → standing_charge\n")
+    (tmp_path / "pt_edp.md").write_text(
+        "# Region profile: Portugal — EDP\n\n`Termo fixo` → standing_charge\n"
+    )
     with (tmp_path / "registry.toml").open("a") as f:
         f.write(
             '\n[[profile]]\nid = "pt_edp"\ncountry = "PT"\nfile = "pt_edp.md"\n'
@@ -68,7 +75,9 @@ def test_two_defaults_for_one_country_are_refused(tmp_path):
 
 
 def test_a_row_naming_a_missing_file_is_refused(tmp_path):
-    (tmp_path / "registry.toml").write_text('[[profile]]\nid="a"\ncountry="RO"\nfile="nope.md"\n')
+    (tmp_path / "registry.toml").write_text(
+        '[[profile]]\nid="a"\ncountry="RO"\nfile="nope.md"\n'
+    )
     with pytest.raises(ProfileRegistryError):
         load_profiles(tmp_path)
 

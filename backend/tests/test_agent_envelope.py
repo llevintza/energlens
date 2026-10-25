@@ -25,7 +25,12 @@ def submitted(case: str) -> dict:
 
 
 def test_every_fixture_submission_validates():
-    for case in ("clean_2025_06", "credit_note_2024_12_1", "long_period_2024_02", "vat21_2026_07"):
+    for case in (
+        "clean_2025_06",
+        "credit_note_2024_12_1",
+        "long_period_2024_02",
+        "vat21_2026_07",
+    ):
         ExtractionEnvelope.model_validate(submitted(case))
 
 
@@ -87,7 +92,9 @@ def test_an_unexpected_key_is_rejected():
 
 
 def test_submit_extraction_returns_the_reasons_and_keeps_nothing():
-    tools = ExtractionTools(pages=["x"], context=ExtractionContext(place=PlaceContext("RO", "RON")))
+    tools = ExtractionTools(
+        pages=["x"], context=ExtractionContext(place=PlaceContext("RO", "RON"))
+    )
     submit = next(t for t in tools.all() if t.name == "submit_extraction")
     payload = submitted("vat21_2026_07")
     payload["total_amount"]["source_text"] = None
@@ -101,7 +108,9 @@ def test_submit_extraction_returns_the_reasons_and_keeps_nothing():
 
 
 def test_the_tool_schema_is_the_envelope():
-    tools = ExtractionTools(pages=["x"], context=ExtractionContext(place=PlaceContext("RO", "RON")))
+    tools = ExtractionTools(
+        pages=["x"], context=ExtractionContext(place=PlaceContext("RO", "RON"))
+    )
     submit = next(t for t in tools.all() if t.name == "submit_extraction")
     schema = submit.to_dict()["input_schema"]
     assert set(schema["required"]) == set(ExtractionEnvelope.model_fields)

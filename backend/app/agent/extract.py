@@ -78,7 +78,10 @@ async def _document_block(
     unavailable, fall back to sending the PDF inline."""
     try:
         uploaded = await client.files.upload(file=(filename, pdf, "application/pdf"))
-        return {"type": "document", "source": {"type": "file", "file_id": uploaded.id}}, uploaded.id
+        return {
+            "type": "document",
+            "source": {"type": "file", "file_id": uploaded.id},
+        }, uploaded.id
     except anthropic.APIError as exc:
         logger.warning("Files API upload failed (%s); sending the PDF inline", exc)
         data = base64.standard_b64encode(pdf).decode()
@@ -95,7 +98,9 @@ async def _delete_file(client: AsyncAnthropic, file_id: str) -> None:
         logger.warning("could not delete uploaded file %s", file_id)
 
 
-def _record_tool_steps(rec: AgentRecorder, tool_uses: list, response: dict, tools: ExtractionTools) -> None:
+def _record_tool_steps(
+    rec: AgentRecorder, tool_uses: list, response: dict, tools: ExtractionTools
+) -> None:
     results = {r["tool_use_id"]: r for r in response["content"]}
     for block in tool_uses:
         result = results.get(block.id, {})
@@ -156,10 +161,16 @@ async def extract_bill(
         async with rec:
             await _run(client, rec, tools, system, pdf, filename)
     except _RunEnded as exc:
-        return ExtractionResult(rec.run_id, RUN_FAILED, None, rec.stop_reason, profile_id, str(exc))
+        return ExtractionResult(
+            rec.run_id, RUN_FAILED, None, rec.stop_reason, profile_id, str(exc)
+        )
 
-    status = rec.status or (RUN_REFUSED if rec.stop_reason == "refusal" else RUN_SUCCEEDED)
-    return ExtractionResult(rec.run_id, status, tools.submitted, rec.stop_reason, profile_id)
+    status = rec.status or (
+        RUN_REFUSED if rec.stop_reason == "refusal" else RUN_SUCCEEDED
+    )
+    return ExtractionResult(
+        rec.run_id, status, tools.submitted, rec.stop_reason, profile_id
+    )
 
 
 async def _run(
@@ -182,7 +193,9 @@ async def _run(
         max_iterations=settings.agent_max_iterations,
         system=system,
         tools=tools.all(),
-        messages=[{"role": "user", "content": [document, {"type": "text", "text": USER_TEXT}]}],
+        messages=[
+            {"role": "user", "content": [document, {"type": "text", "text": USER_TEXT}]}
+        ],
         # Thinking is omitted: adaptive is the default on this model, and
         # effort is the only control it takes.
         output_config={"effort": settings.agent_effort},

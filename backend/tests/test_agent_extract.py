@@ -37,7 +37,9 @@ def maker(db_engine):
     return async_sessionmaker(db_engine, expire_on_commit=False)
 
 
-RO_PLACE = PlaceContext(country_code="RO", currency_code="RON", known_provider_name="PPC Energie S.A.")
+RO_PLACE = PlaceContext(
+    country_code="RO", currency_code="RON", known_provider_name="PPC Energie S.A."
+)
 PRIOR = PriorBill(
     provider_invoice_series="SYN",
     provider_invoice_number="2025050001",
@@ -47,7 +49,9 @@ PRIOR = PriorBill(
     consumption=Decimal("240"),
     total_amount=Decimal("310.20"),
     effective_price=Decimal("1.2925"),
-    meter_readings=[{"register": None, "index_current": Decimal("10250"), "read_method": "actual"}],
+    meter_readings=[
+        {"register": None, "index_current": Decimal("10250"), "read_method": "actual"}
+    ],
 )
 
 
@@ -68,7 +72,9 @@ async def stored(maker, run_id):
         run = await session.get(AgentRun, run_id)
         steps = (
             await session.scalars(
-                select(AgentStep).where(AgentStep.run_id == run_id).order_by(AgentStep.seq)
+                select(AgentStep)
+                .where(AgentStep.run_id == run_id)
+                .order_by(AgentStep.seq)
             )
         ).all()
         return run, list(steps)
@@ -87,9 +93,18 @@ async def test_2025_06_extracts_twelve_lines_with_their_kinds_and_reconciles(mak
     assert result.status == "succeeded"
     env = result.envelope
     assert [item.charge_kind for item in env.line_items] == [
-        "energy", "energy", "green_certificates", "cogeneration", "excise",
-        "standing_charge", "other", "transmission", "transmission",
-        "system_services", "distribution", "other",
+        "energy",
+        "energy",
+        "green_certificates",
+        "cogeneration",
+        "excise",
+        "standing_charge",
+        "other",
+        "transmission",
+        "transmission",
+        "system_services",
+        "distribution",
+        "other",
     ]
     assert [i.line_no for i in env.line_items if i.is_subtotal] == [7, 12]
     # Energy at two prices is two lines with their own sub-periods, not an average.
@@ -97,7 +112,9 @@ async def test_2025_06_extracts_twelve_lines_with_their_kinds_and_reconciles(mak
     assert first.unit_price != second.unit_price
     assert first.period_end < second.period_start
 
-    recon = bill_math.reconcile(SimpleNamespace(net_amount=env.net_amount.value), env.line_items)
+    recon = bill_math.reconcile(
+        SimpleNamespace(net_amount=env.net_amount.value), env.line_items
+    )
     assert recon.within_tolerance is True
     assert env.total_amount.value == Decimal("338.42")
     assert env.total_due.value == Decimal("350.92")
@@ -174,8 +191,12 @@ async def test_a_clean_run_records_turns_tokens_and_one_step_per_tool_call(maker
 
     tool_steps = [s for s in steps if s.kind == "tool_use"]
     assert [s.tool_name for s in tool_steps] == [
-        "get_page_text", "get_place_context", "get_prior_bill",
-        "get_page_text", "check_arithmetic", "submit_extraction",
+        "get_page_text",
+        "get_place_context",
+        "get_prior_bill",
+        "get_page_text",
+        "check_arithmetic",
+        "submit_extraction",
     ]
     assert all(s.ok for s in tool_steps)
     assert all(s.duration_ms is not None for s in tool_steps)
@@ -249,8 +270,11 @@ async def test_the_request_uses_the_files_api_config_and_the_profile(maker):
     assert first["fallbacks"] == "default"
     assert FALLBACK_BETA in transport.message_headers[0]["anthropic-beta"]
     assert {t["name"] for t in first["tools"]} == {
-        "get_page_text", "get_place_context", "get_prior_bill",
-        "check_arithmetic", "submit_extraction",
+        "get_page_text",
+        "get_place_context",
+        "get_prior_bill",
+        "check_arithmetic",
+        "submit_extraction",
     }
     # Uploaded once, referenced by id, deleted at the end.
     assert transport.uploads == 1
@@ -284,7 +308,9 @@ async def test_the_fallback_can_be_turned_off(maker, monkeypatch):
 
 
 async def test_a_place_with_no_profile_runs_on_the_base_prompt(maker):
-    context = ExtractionContext(place=PlaceContext(country_code="PT", currency_code="EUR"))
+    context = ExtractionContext(
+        place=PlaceContext(country_code="PT", currency_code="EUR")
+    )
     _, transport, result = await run_case("vat21_2026_07", maker, context=context)
 
     assert result.profile is None

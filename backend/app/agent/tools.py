@@ -13,6 +13,7 @@ run.
 """
 
 import json
+import logging
 import time
 from decimal import Decimal
 from io import BytesIO
@@ -28,6 +29,8 @@ from app.agent.envelope import ExtractionEnvelope
 from app.schemas.bill_line_item import ChargeKindLiteral
 from app.services import bill_math
 
+logger = logging.getLogger(__name__)
+
 TWO_PLACES = Decimal("0.01")
 
 
@@ -40,6 +43,7 @@ def page_texts(pdf: bytes) -> list[str]:
         reader = PdfReader(BytesIO(pdf))
         return [page.extract_text() or "" for page in reader.pages]
     except Exception:
+        logger.info("pypdf could not read the text layer", exc_info=True)
         return []
 
 
@@ -102,7 +106,9 @@ class ExtractionTools:
                         "this PDF has no text layer; read the attached document instead"
                     )
                 if not 1 <= page <= len(tools.pages):
-                    raise ToolError(f"page {page} does not exist; the bill has {len(tools.pages)}")
+                    raise ToolError(
+                        f"page {page} does not exist; the bill has {len(tools.pages)}"
+                    )
                 return tools.pages[page - 1]
             finally:
                 tools._timed("get_page_text", t0)
@@ -127,7 +133,11 @@ class ExtractionTools:
             t0 = time.monotonic()
             try:
                 prior = tools.context.prior_bill_dict()
-                return json.dumps(prior) if prior else "No prior bill on file for this place."
+                return (
+                    json.dumps(prior)
+                    if prior
+                    else "No prior bill on file for this place."
+                )
             finally:
                 tools._timed("get_prior_bill", t0)
 
@@ -165,15 +175,28 @@ class ExtractionTools:
                     "net_delta": _num(recon.delta),
                     "net_within_tolerance": recon.within_tolerance,
                     "by_charge_kind": {
-                        k: str(v) for k, v in bill_math.by_charge_kind(line_items).items()
+                        k: str(v)
+                        for k, v in bill_math.by_charge_kind(line_items).items()
                     },
-                    "subtotal_lines_excluded": sum(1 for i in line_items if i.is_subtotal),
+                    "subtotal_lines_excluded": sum(
+                        1 for i in line_items if i.is_subtotal
+                    ),
                 }
-                if vat_base is not None and vat_rate is not None and vat_amount is not None:
+                if (
+                    vat_base is not None
+                    and vat_rate is not None
+                    and vat_amount is not None
+                ):
                     expected = (vat_base * vat_rate).quantize(TWO_PLACES)
                     result["vat_check"] = _check(expected, vat_amount)
-                if net_amount is not None and vat_amount is not None and total_amount is not None:
-                    result["total_check"] = _check(net_amount + vat_amount, total_amount)
+                if (
+                    net_amount is not None
+                    and vat_amount is not None
+                    and total_amount is not None
+                ):
+                    result["total_check"] = _check(
+                        net_amount + vat_amount, total_amount
+                    )
                 return json.dumps(result)
             finally:
                 tools._timed("check_arithmetic", t0)
@@ -190,11 +213,18 @@ class ExtractionTools:
                     envelope = ExtractionEnvelope.model_validate(payload)
                 except pydantic.ValidationError as exc:
                     raise ToolError(
-                        "Rejected. Fix these and submit again:\n" + validation_summary(exc)
+                        "Rejected. Fix these and submit again:\n"
+                        + validation_summary(exc)
                     ) from exc
                 tools.submitted = envelope
                 return "Accepted."
             finally:
                 tools._timed("submit_extraction", t0)
 
-        return [get_page_text, get_place_context, get_prior_bill, check_arithmetic, submit_extraction]
+        return [
+            get_page_text,
+            get_place_context,
+            get_prior_bill,
+            check_arithmetic,
+            submit_extraction,
+        ]

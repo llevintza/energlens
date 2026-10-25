@@ -17,15 +17,12 @@ columns from #52/#53, so #60 maps this onto rows without a translation layer.
 
 from datetime import date
 from decimal import Decimal
-from typing import Generic, TypeVar
 
 import pydantic
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from app.schemas.bill import DocumentTypeLiteral, ReadMethodLiteral
 from app.schemas.bill_line_item import ChargeKindLiteral
-
-T = TypeVar("T")
 
 
 class Sourced(BaseModel):
@@ -58,7 +55,7 @@ class Sourced(BaseModel):
         return self
 
 
-class Field(Sourced, Generic[T]):
+class Field[T](Sourced):
     """One extracted header value. ``value`` is null when the bill does not print it."""
 
     value: T | None

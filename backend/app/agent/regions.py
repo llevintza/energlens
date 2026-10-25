@@ -47,7 +47,9 @@ def load_profiles(directory: Path = PROFILES_DIR) -> list[Profile]:
                 country_default=bool(row.get("country_default", False)),
             )
         except (KeyError, OSError) as exc:
-            raise ProfileRegistryError(f"{registry}: bad [[profile]] row {row!r}: {exc}") from exc
+            raise ProfileRegistryError(
+                f"{registry}: bad [[profile]] row {row!r}: {exc}"
+            ) from exc
         if profile.country_default:
             if country in defaults:
                 raise ProfileRegistryError(

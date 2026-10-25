@@ -37,15 +37,26 @@ async def test_a_place_with_no_bills_has_no_prior(sessions, place):
 
 
 async def test_the_latest_bill_is_the_prior_with_its_index(sessions, place):
-    older = bill(place["id"], date(2026, 1, 1), date(2026, 1, 31), provider_name="Old Co")
+    older = bill(
+        place["id"], date(2026, 1, 1), date(2026, 1, 31), provider_name="Old Co"
+    )
     latest = bill(
-        place["id"], date(2026, 2, 1), date(2026, 2, 28),
-        provider_name="New Co", provider_tax_id="PT000",
-        provider_invoice_series="SYN", provider_invoice_number="0002",
-        consumption=Decimal("200"), total_amount=Decimal("50.00"),
+        place["id"],
+        date(2026, 2, 1),
+        date(2026, 2, 28),
+        provider_name="New Co",
+        provider_tax_id="PT000",
+        provider_invoice_series="SYN",
+        provider_invoice_number="0002",
+        consumption=Decimal("200"),
+        total_amount=Decimal("50.00"),
     )
     latest.meter_readings = [
-        BillMeterReading(read_method="actual", index_current=Decimal("1234.000"), quantity=Decimal("200"))
+        BillMeterReading(
+            read_method="actual",
+            index_current=Decimal("1234.000"),
+            quantity=Decimal("200"),
+        )
     ]
     async with sessions() as session:
         session.add_all([older, latest])
@@ -76,11 +87,23 @@ async def test_a_rerun_does_not_compare_a_bill_with_itself(sessions, place):
         )
         session.add(doc)
         await session.flush()
-        session.add_all([
-            bill(place["id"], date(2026, 1, 1), date(2026, 1, 31), provider_invoice_number="0001"),
-            bill(place["id"], date(2026, 2, 1), date(2026, 2, 28), provider_invoice_number="0002",
-                 document_id=doc.id),
-        ])
+        session.add_all(
+            [
+                bill(
+                    place["id"],
+                    date(2026, 1, 1),
+                    date(2026, 1, 31),
+                    provider_invoice_number="0001",
+                ),
+                bill(
+                    place["id"],
+                    date(2026, 2, 1),
+                    date(2026, 2, 28),
+                    provider_invoice_number="0002",
+                    document_id=doc.id,
+                ),
+            ]
+        )
         await session.commit()
 
     async with sessions() as session:

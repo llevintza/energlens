@@ -39,13 +39,19 @@ def make_text_pdf(pages: list[list[str]]) -> bytes:
         f"<< /Type /Pages /Kids [{kids}] /Count {n} >>".encode(),
     ]
     for i, lines in enumerate(pages):
-        body = "BT /F1 9 Tf 12 TL 20 800 Td " + " ".join(f"({_escape(line)}) Tj T*" for line in lines) + " ET"
+        body = (
+            "BT /F1 9 Tf 12 TL 20 800 Td "
+            + " ".join(f"({_escape(line)}) Tj T*" for line in lines)
+            + " ET"
+        )
         stream = body.encode("latin-1")
         objects.append(
             f"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
             f"/Resources << /Font << /F1 {font_id} 0 R >> >> /Contents {4 + 2 * i} 0 R >>".encode()
         )
-        objects.append(f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream")
+        objects.append(
+            f"<< /Length {len(stream)} >>\nstream\n".encode() + stream + b"\nendstream"
+        )
     objects.append(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
 
     out = bytearray(b"%PDF-1.4\n")
@@ -87,7 +93,10 @@ class RecordedTransport:
             if self.upload_status != 200:
                 return httpx2.Response(
                     self.upload_status,
-                    json={"type": "error", "error": {"type": "api_error", "message": "synthetic"}},
+                    json={
+                        "type": "error",
+                        "error": {"type": "api_error", "message": "synthetic"},
+                    },
                 )
             return httpx2.Response(
                 200,
@@ -109,7 +118,9 @@ class RecordedTransport:
             self.message_requests.append(json.loads(request.content))
             self.message_headers.append(request.headers)
             if not self._responses:
-                raise AssertionError("the agent made more Messages calls than the fixture holds")
+                raise AssertionError(
+                    "the agent made more Messages calls than the fixture holds"
+                )
             return httpx2.Response(200, json=self._responses.pop(0))
         raise AssertionError(f"unexpected request {request.method} {request.url}")
 
@@ -121,5 +132,7 @@ class RecordedTransport:
         return AsyncAnthropic(
             api_key="test-key-not-real",
             max_retries=0,
-            http_client=httpx2.AsyncClient(transport=httpx2.MockTransport(self.handler)),
+            http_client=httpx2.AsyncClient(
+                transport=httpx2.MockTransport(self.handler)
+            ),
         )
