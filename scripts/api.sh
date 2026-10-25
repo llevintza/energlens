@@ -2,7 +2,7 @@
 # Reachability checks for the *hosted* Energlens API.
 #
 #   scripts/api.sh preflight [url]   assert an Energlens API answers at <url>/health
-#   scripts/api.sh smoke [url]       preflight + OpenAPI contract (title, DELETE /users/me)
+#   scripts/api.sh smoke [url]       preflight + the deployed commit + OpenAPI contract
 #   scripts/api.sh validate [url]    the offline half only: shape and format
 #
 # <url> defaults to $API_URL. With neither, and outside Actions, it falls back to
@@ -17,7 +17,10 @@
 # stays green and the SPA reports "Login failed — is the API running?" (issue #11).
 #
 # smoke exists because /health alone is not enough: a live process can still be
-# serving yesterday's commit (issue #48). OpenAPI is the check that answers that.
+# serving yesterday's commit (issue #48). The OpenAPI contract could not answer
+# that either — it holds on the previous revision too, so a smoke run ten
+# seconds after a merge went green against the old deploy (issues #91, #97). So
+# smoke waits until /health names a commit that contains the one under test.
 #
 # Every failure path prints the command that fixes it.
 set -eu
@@ -43,6 +46,10 @@ TIMEOUT="${API_PREFLIGHT_TIMEOUT:-30}"
 # instance wakes. A slow *connect* therefore means a dead host, not a cold one —
 # retry rather than burn the whole per-attempt budget on it.
 CONNECT_TIMEOUT="${API_PREFLIGHT_CONNECT_TIMEOUT:-10}"
+# Smoke only. Once the served commit is proven live, a broken contract is
+# deterministic — waiting out the deploy budget will not fix it. Two tries
+# covers a cold start answering /openapi.json late; then it fails.
+CONTRACT_ATTEMPTS="${API_SMOKE_CONTRACT_ATTEMPTS:-2}"
 
 say() { printf '%s\n' "$*" >&2; }
 die() { printf '%s\n' "$*" >&2; exit 1; }
@@ -62,6 +69,81 @@ excerpt() { printf '%.200s' "$(printf '%s' "$1" | tr -d '\r' | tr '\n' ' ')"; }
 # that can be compared exactly rather than grepped for.
 squeeze() { printf '%s' "$1" | tr -d '[:space:]'; }
 
+# Exact, not grepped: the body is what says "this is *our* API". A revision from
+# before issue #91 answers {"status":"ok"}; a current one adds fields after the
+# status. Both are an Energlens API, and preflight must accept either — it gates
+# frontend deploys, and must not fail them while a backend deploy is in flight.
+health_ok() {
+  case "$(squeeze "$1")" in
+    '{"status":"ok"}' | '{"status":"ok",'*'}') return 0 ;;
+  esac
+  return 1
+}
+
+# The commit a /health body names, or "unknown" when it names none — which is
+# also what a revision that predates the field (issue #91) amounts to. Hex only:
+# the value goes to git as a revision, and "main" or "HEAD" would resolve there
+# and pass the ancestry check without naming any deploy at all.
+served_commit() {
+  sc="$(squeeze "$1" | sed -n 's/.*"commit":"\([0-9a-f]\{7,40\}\)".*/\1/p')"
+  printf '%s' "${sc:-unknown}"
+}
+
+git_repo() { git -C "$(dirname "$0")" "$@"; }
+
+# The commit that must be live for smoke to pass. Not simply HEAD: render.yaml
+# sets rootDir: backend, and Render only auto-deploys a push that changes files
+# under the root directory (https://render.com/docs/monorepo-support). A commit
+# that touches only scripts/ or frontend/ is never served, so waiting for it
+# would time out against a perfectly current API. The newest commit that changed
+# backend/ is the one a finished deploy must contain.
+#
+# In Actions that is measured from the commit under test; locally from
+# origin/main as of your last fetch, which is what the deploy follows.
+# API_EXPECT_COMMIT overrides both.
+expected_commit() {
+  if [ -n "${API_EXPECT_COMMIT:-}" ]; then
+    expected="$API_EXPECT_COMMIT"
+    expected_why="API_EXPECT_COMMIT"
+    return 0
+  fi
+
+  have git || die "error: no git on PATH, so smoke cannot tell which commit should be live.
+     Fix: install git, or set API_EXPECT_COMMIT=<sha>"
+
+  if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    ref="${GITHUB_SHA:-HEAD}"
+  else
+    ref=origin/main
+  fi
+
+  # :/ anchors the pathspec at the repository root, whatever the caller's cwd.
+  expected="$(git_repo log -1 --format=%H "$ref" -- ':/backend' 2>/dev/null || true)"
+  [ -n "$expected" ] || die "error: found no commit under backend/ reachable from $ref.
+     A shallow clone is the usual cause: actions/checkout needs fetch-depth: 0.
+     Fix: git fetch origin   (or set API_EXPECT_COMMIT=<sha>)"
+  expected_why="newest commit under backend/ in $ref"
+}
+
+# Live means the served commit *contains* the expected one, not equals it: a
+# later merge may already have deployed by the time this run polls, and that is
+# a current API, not a stale one. A served commit this clone has never seen is
+# fetched once by SHA — once per run, not once per attempt, and a stalled
+# transfer is abandoned after 20 s rather than hanging the attempt (there is no
+# portable timeout(1); git's own low-speed limit works on macOS and Linux). If it
+# is still unknown — "unknown" itself, a short SHA from a rewritten history — it
+# cannot be proved live, so it is not.
+fetched=
+commit_is_live() {
+  [ "$1" != unknown ] || return 1
+  if ! git_repo cat-file -e "$1^{commit}" 2>/dev/null && [ "$1" != "$fetched" ]; then
+    fetched="$1"
+    git_repo -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
+      fetch --quiet origin "$1" 2>/dev/null || true
+  fi
+  git_repo merge-base --is-ancestor "$2" "$1" 2>/dev/null
+}
+
 fix_url() {
   say ""
   say "Fix: read the hostname off the Render service page — Render appends a suffix"
@@ -78,7 +160,7 @@ fix_url() {
 # but the revision is stale. Point at Render, not at API_URL (issue #48).
 fix_stale() {
   say ""
-  say "Fix: the API is up but its OpenAPI surface is behind main."
+  say "Fix: the API is up but it is serving an older revision than main."
   say "     In the Render dashboard: energlens-api → Manual Deploy → Deploy latest commit."
   say "     Confirm Auto Deploy is On Commit (render.yaml sets autoDeployTrigger: commit)."
   say "     If the Blueprint did not pick that up, Manual Sync the Blueprint once."
@@ -253,7 +335,7 @@ cmd_preflight() {
     # Status AND body. `curl -sS` without -f exits 0 on a 404, so the exit status
     # is not a signal; 2xx alone would accept any server that happens to answer.
     # The body is what says "this is *our* API".
-    if [ "$code" = "200" ] && [ "$(squeeze "$body")" = '{"status":"ok"}' ]; then
+    if [ "$code" = "200" ] && health_ok "$body"; then
       note "  API_URL ok — $probe served {\"status\":\"ok\"} (attempt $n/$ATTEMPTS)"
       check_db
       return 0
@@ -326,20 +408,28 @@ if "delete" not in methods:
   esac
 }
 
-# Stronger than preflight: waits until /health is green *and* OpenAPI shows the
-# public contract that would have caught issue #48. Used after backend merges
-# (Render deploys out-of-band) and on a daily cron. Raise ATTEMPTS/INTERVAL via
-# the env knobs above when waiting on a free-tier build.
+# Stronger than preflight: waits until /health is green, names a commit that
+# contains the one under test, *and* OpenAPI shows the public contract that would
+# have caught issue #48. Used after backend merges (Render deploys out-of-band)
+# and on a daily cron. Raise ATTEMPTS/INTERVAL via the env knobs above when
+# waiting on a free-tier build: the deploy is *expected* to lag the merge, so a
+# stale commit is retried, and only fails once the whole budget is spent.
 cmd_smoke() {
   resolve_url "$@"
 
   have curl || die "error: no curl on PATH.
      Fix: brew install curl   (every GitHub Actions runner has it preinstalled)"
 
+  expected_commit
+  note "  waiting for commit $expected ($expected_why)"
+
   probe="$url/health"
   n=1
   last_health=down
+  last_commit=pending
   last_openapi=pending
+  served=unknown
+  contract_fails=0
   while :; do
     rc=0
     out="$(curl -sS --connect-timeout "$CONNECT_TIMEOUT" --max-time "$TIMEOUT" \
@@ -347,33 +437,58 @@ cmd_smoke() {
     code="${out##*|HTTP:}"
     body="${out%|HTTP:*}"
 
-    if [ "$code" = "200" ] && [ "$(squeeze "$body")" = '{"status":"ok"}' ]; then
+    if [ "$code" = "200" ] && health_ok "$body"; then
       last_health=ok
-      note "  API_URL ok — $probe served {\"status\":\"ok\"} (attempt $n/$ATTEMPTS)"
-      check_db
-      if check_openapi_contract; then
-        last_openapi=ok
-        return 0
+      served="$(served_commit "$body")"
+      if commit_is_live "$served" "$expected"; then
+        last_commit=ok
+        note "  API_URL ok — $probe serves commit $served, which contains $expected (attempt $n/$ATTEMPTS)"
+        check_db
+        if check_openapi_contract; then
+          last_openapi=ok
+          return 0
+        fi
+        last_openapi=stale
+        contract_fails=$((contract_fails + 1))
+        [ "$contract_fails" -lt "$CONTRACT_ATTEMPTS" ] || break
+      else
+        last_commit=stale
+        last_openapi=pending
       fi
-      last_openapi=stale
     else
       last_health=down
+      last_commit=pending
       last_openapi=pending
     fi
 
     [ "$n" -lt "$ATTEMPTS" ] || break
-    say "  attempt $n/$ATTEMPTS: health=$last_health openapi=$last_openapi — retrying in ${INTERVAL}s"
+    say "  attempt $n/$ATTEMPTS: health=$last_health commit=$last_commit${served:+ ($served)} openapi=$last_openapi — retrying in ${INTERVAL}s"
     n=$((n + 1))
     sleep "$INTERVAL"
   done
 
   say ""
-  if [ "$last_health" = ok ] && [ "$last_openapi" = stale ]; then
-    summary="API_URL ($url) is up but OpenAPI is behind main after $ATTEMPTS attempts"
+  if [ "$last_health" = ok ] && [ "$last_commit" = stale ]; then
+    summary="Deploy is stale: API_URL ($url) serves commit $served, not $expected or a descendant, after $ATTEMPTS attempts"
     say "$summary."
-    say "A green /health with a stale OpenAPI is exactly issue #48 — the process"
-    say "is serving an older commit than main."
+    if [ "$served" = unknown ]; then
+      say "/health names no commit, so the revision answering predates issue #91 —"
+      say "older than the change that added the field, and so older than main."
+    else
+      say "The process is up and answering, but from an older commit than the one"
+      say "under test: the deploy has not happened, or has not finished."
+    fi
     fix_stale
+    annotate error "$summary."
+    exit 1
+  fi
+
+  if [ "$last_health" = ok ] && [ "$last_openapi" = stale ]; then
+    summary="API_URL ($url) serves commit $served but its OpenAPI contract does not hold after $n attempts"
+    say "$summary."
+    say "The deploy is current, so this is not issue #48: the app on main no longer"
+    say "matches what check_openapi_contract in scripts/api.sh asserts. Fix whichever"
+    say "of the two is wrong, then: make api-smoke"
     annotate error "$summary."
     exit 1
   fi
@@ -402,7 +517,7 @@ case "${1:-preflight}" in
     ;;
   -h | --help | help)
     say "usage: $0 preflight [url]   # shape + reachability"
-    say "       $0 smoke     [url]   # preflight + OpenAPI contract"
+    say "       $0 smoke     [url]   # preflight + deployed commit + OpenAPI contract"
     say "       $0 validate  [url]   # shape only, no network"
     ;;
   *) die "usage: $0 [preflight|smoke|validate] [url]" ;;

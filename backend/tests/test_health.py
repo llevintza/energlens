@@ -1,8 +1,9 @@
 """The two health endpoints, and the split between them.
 
 /health is what render.yaml points the platform at, so it must stay a pure
-liveness probe. /health/db is the readiness half — it is the only thing that
-proves the database is reachable, and it must never leak the DSN while saying so.
+liveness probe — it also names the commit it runs, which is fixed per process.
+/health/db is the readiness half — it is the only thing that proves the
+database is reachable, and it must never leak the DSN while saying so.
 """
 
 import contextlib
@@ -12,6 +13,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
+from app.config import settings
 from app.db import get_async_session
 from app.main import app
 
@@ -54,10 +56,37 @@ def failing_session():
 
 
 class TestHealth:
-    async def test_health_is_ok(self, client):
+    async def test_health_is_ok(self, client, monkeypatch):
+        monkeypatch.setattr(settings, "render_git_commit", "unknown")
         r = await client.get("/health")
         assert r.status_code == 200
-        assert r.json() == {"status": "ok"}
+        assert r.json() == {"status": "ok", "commit": "unknown"}
+
+    async def test_health_reports_the_deployed_commit(self, client, monkeypatch):
+        """The field scripts/api.sh smoke waits on (issue #91).
+
+        Without it a finished deploy and the revision before it answer
+        identically, and the smoke passed against a stale deploy.
+        """
+        sha = "2a71e72f0c4b9d8e7a6f5b4c3d2e1f0a9b8c7d6e"
+        monkeypatch.setattr(settings, "render_git_commit", sha)
+        r = await client.get("/health")
+        assert r.json() == {"status": "ok", "commit": sha}
+
+    async def test_an_empty_commit_reads_as_unknown(self, client, monkeypatch):
+        """An exported-but-blank variable must not serve "commit": "".
+
+        The smoke compares the value to git history; "unknown" is the one
+        spelling it treats as "this revision cannot say", so use it everywhere.
+        """
+        monkeypatch.setattr(settings, "render_git_commit", "")
+        r = await client.get("/health")
+        assert r.json()["commit"] == "unknown"
+
+    def test_the_commit_comes_from_render_git_commit(self, monkeypatch):
+        """Render's name for it, verbatim: https://render.com/docs/environment-variables"""
+        monkeypatch.setenv("RENDER_GIT_COMMIT", "abc1234")
+        assert type(settings)().render_git_commit == "abc1234"
 
     async def test_health_does_not_touch_the_database(self, client):
         """Guards the reason /health is separate from /health/db.
@@ -74,7 +103,7 @@ class TestHealth:
         with session_override(refuse):
             r = await client.get("/health")
         assert r.status_code == 200
-        assert r.json() == {"status": "ok"}
+        assert r.json()["status"] == "ok"
 
 
 class TestHealthDb:

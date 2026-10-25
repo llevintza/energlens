@@ -278,7 +278,7 @@ at nothing.
 
    ```sh
    H=https://<actual-host>
-   curl -sS --max-time 90 "$H/health"     # {"status":"ok"} — the process is up
+   curl -sS --max-time 90 "$H/health"     # {"status":"ok","commit":"<sha>"} — up, and which commit
    curl -sS --max-time 90 "$H/health/db"  # {"status":"ok","database":"ok"} — Neon is reachable
    ```
 
@@ -394,10 +394,10 @@ Either provider's free tier is ample and neither charges for egress:
   files an issue that closes itself on the next green run. `Pages smoke test`
   re-checks the live site daily, which is what catches the *frontend* half of the
   build-time-config drift described above — the backend half is `make api-smoke`
-  / `api-smoke.yml` (OpenAPI contract, not only `/health`). The same daily run
-  also fails when a commit touching a deploy path landed on `main` and the live
-  deployment is still older than it (`scripts/pages-current.sh`): a push once
-  produced no workflow run at all
+  / `api-smoke.yml` (the deployed commit and OpenAPI contract, not only
+  `/health`). The same daily run also fails when a commit touching a
+  deploy path landed on `main` and the live deployment is still older than it
+  (`scripts/pages-current.sh`): a push once produced no workflow run at all
   ([#95](https://github.com/llevintza/energlens/issues/95)), and a run that never
   starts cannot raise its own alert. See
   [ADR-0017](docs/adr/0017-verify-the-pages-deploy.md) and
@@ -414,16 +414,20 @@ Either provider's free tier is ample and neither charges for egress:
   request back takes 30–60s; `plan: starter` ($7/mo) makes it always-on with no
   other change.
 
-  After a `backend/` merge, `api-smoke.yml` polls the live host until OpenAPI
-  shows the expected surface (`make api-smoke` locally). A green `/health` on a
-  stale revision is not enough — that was issue #48.
+  After a `backend/` merge, `api-smoke.yml` polls the live host until `/health`
+  names a commit containing the newest `backend/` commit (Render sets
+  `RENDER_GIT_COMMIT`), then checks the OpenAPI contract; it fails with
+  "Deploy is stale" when the build never lands. Locally: `git fetch && make
+  api-smoke`. A green `/health` on a stale revision is not enough — that was
+  issue #48 — and nor is a contract the previous revision also meets (#91).
 
   Note that `SEED_DEMO=true` creates a shared account with credentials
   committed to this repo, and the authenticated API allows writes — anyone who
   finds the demo can modify its data, and re-seeding will not restore it.
 
   Two health endpoints, deliberately split. `/health` is `healthCheckPath` and
-  stays a static `{"status":"ok"}`: the platform polls it, so a database
+  stays static — `{"status":"ok"}` plus the commit the process was built from,
+  `"unknown"` off Render: the platform polls it, so a database
   round-trip there would pay a Neon cold start on every probe and let a suspended
   database read as a dead process. `/health/db` does the `SELECT 1` and answers
   **503** when Postgres is unreachable — so a green health check plus a red

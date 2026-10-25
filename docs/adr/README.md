@@ -31,6 +31,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0019](0019-verify-the-api-deploy.md) | Verify the API deploy, and pin auto-deploy in the Blueprint | Accepted | Ops |
 | [0020](0020-invoice-identity-not-billing-period.md) | Identify a bill by its invoice number, not its billing period | Accepted | Data |
 | [0021](0021-pdf-blob-storage.md) | Keep bill PDFs in an object store, behind a two-backend Protocol | Accepted | Data |
+| [0022](0022-prove-the-deployed-commit.md) | Prove the deployed commit before smoking the API | Accepted | Ops |
 
 ## Status legend
 

@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173"
 
+    # The commit this process was built from, served on /health so a deploy can
+    # be told apart from the revision before it (issue #91). Render sets
+    # RENDER_GIT_COMMIT at build time and at runtime; anywhere else — a clone,
+    # the suite, CI — it is unset and /health says so rather than guessing.
+    render_git_commit: str = "unknown"
+
     google_client_id: str = ""
     google_client_secret: str = ""
     github_client_id: str = ""
