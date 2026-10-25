@@ -1,0 +1,224 @@
+{
+  "description": "get_place_context raises (the test supplies a broken context). The runner returns the exception as an is_error tool result and the model submits anyway.",
+  "pages": [
+    [
+      "Furnizor: PPC Energie S.A.  CIF RO00000000",
+      "Factura fiscala Seria SYN nr. 2026070004",
+      "Perioada facturare: 01.06.2026 - 30.06.2026",
+      "1. Energie electrica activa 640 kWh x 0,868547 = 555,87",
+      "Total fara TVA: 555,87",
+      "Baza de impozitare TVA: 554,97  TVA 21%: 116,54",
+      "Total factura curenta: 672,41"
+    ]
+  ],
+  "responses": [
+    {
+      "id": "msg_01SYNTH000029",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000028",
+          "name": "get_place_context",
+          "input": {}
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 3900,
+        "output_tokens": 60,
+        "cache_creation_input_tokens": 3850,
+        "cache_read_input_tokens": 0
+      }
+    },
+    {
+      "id": "msg_01SYNTH000031",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000030",
+          "name": "submit_extraction",
+          "input": {
+            "document_type": {
+              "value": "invoice",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2026070004"
+            },
+            "provider_name": {
+              "value": "PPC Energie S.A.",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Furnizor: PPC Energie S.A.  CIF RO00000000"
+            },
+            "provider_tax_id": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "customer_code": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "provider_invoice_series": {
+              "value": "SYN",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2026070004"
+            },
+            "provider_invoice_number": {
+              "value": "2026070004",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2026070004"
+            },
+            "corrects_invoice_number": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "issued_on": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "due_on": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "period_start": {
+              "value": "2026-06-01",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.06.2026 - 30.06.2026"
+            },
+            "period_end": {
+              "value": "2026-06-30",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.06.2026 - 30.06.2026"
+            },
+            "consumption": {
+              "value": "640",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "1. Energie electrica activa 640 kWh x 0,868547 = 555,87"
+            },
+            "unit": {
+              "value": "kWh",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "1. Energie electrica activa 640 kWh x 0,868547 = 555,87"
+            },
+            "currency_code": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "net_amount": {
+              "value": "555.87",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Total fara TVA: 555,87"
+            },
+            "vat_base": {
+              "value": "554.97",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: 554,97  TVA 21%: 116,54"
+            },
+            "vat_rate": {
+              "value": "0.21",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: 554,97  TVA 21%: 116,54"
+            },
+            "vat_amount": {
+              "value": "116.54",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: 554,97  TVA 21%: 116,54"
+            },
+            "total_amount": {
+              "value": "672.41",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Total factura curenta: 672,41"
+            },
+            "balance_brought_forward": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "total_due": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "read_method": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "line_items": [
+              {
+                "line_no": 1,
+                "charge_kind": "energy",
+                "raw_label": "Energie electrica activa",
+                "quantity": "640",
+                "unit": "kWh",
+                "unit_price": "0.868547",
+                "net_amount": "555.87",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 1,
+                "source_text": "1. Energie electrica activa 640 kWh x 0,868547 = 555,87"
+              }
+            ],
+            "meter_readings": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 450,
+        "output_tokens": 1600,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 3850
+      }
+    }
+  ]
+}

@@ -1,0 +1,316 @@
+{
+  "description": "Synthetic stand-in for 2024-12-1: a Stornare reversing an earlier invoice, negative quantities and amounts.",
+  "pages": [
+    [
+      "Furnizor: PPC Energie Muntenia S.A.  CIF RO00000000",
+      "Factura de stornare Seria SYN nr. 2024120002",
+      "Stornare a facturii seria SYN nr. 2024110007",
+      "Data emiterii: 10.12.2024",
+      "Perioada facturare: 01.10.2024 - 31.10.2024",
+      "1. Energie electrica activa -180 kWh x 0,68 = -122,40",
+      "2. Certificate verzi -180 kWh x 0,0725416 = -13,06",
+      "3. Tarif distributie -180 kWh x 0,21 = -37,80",
+      "Total fara TVA: -173,26",
+      "Baza de impozitare TVA: -173,26  TVA 19%: -32,92",
+      "Total factura curenta: -206,18"
+    ]
+  ],
+  "responses": [
+    {
+      "id": "msg_01SYNTH000013",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000011",
+          "name": "get_page_text",
+          "input": {
+            "page": 1
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000012",
+          "name": "get_prior_bill",
+          "input": {}
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 4100,
+        "output_tokens": 180,
+        "cache_creation_input_tokens": 4000,
+        "cache_read_input_tokens": 0
+      }
+    },
+    {
+      "id": "msg_01SYNTH000015",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000014",
+          "name": "check_arithmetic",
+          "input": {
+            "line_items": [
+              {
+                "charge_kind": "energy",
+                "net_amount": "-122.40"
+              },
+              {
+                "charge_kind": "green_certificates",
+                "net_amount": "-13.06"
+              },
+              {
+                "charge_kind": "distribution",
+                "net_amount": "-37.80"
+              }
+            ],
+            "net_amount": "-173.26",
+            "vat_base": "-173.26",
+            "vat_rate": "0.19",
+            "vat_amount": "-32.92",
+            "total_amount": "-206.18"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 700,
+        "output_tokens": 420,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 4000
+      }
+    },
+    {
+      "id": "msg_01SYNTH000017",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000016",
+          "name": "submit_extraction",
+          "input": {
+            "document_type": {
+              "value": "credit_note",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura de stornare Seria SYN nr. 2024120002"
+            },
+            "provider_name": {
+              "value": "PPC Energie Muntenia S.A.",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Furnizor: PPC Energie Muntenia S.A.  CIF RO00000000"
+            },
+            "provider_tax_id": {
+              "value": "RO00000000",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Furnizor: PPC Energie Muntenia S.A.  CIF RO00000000"
+            },
+            "customer_code": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "provider_invoice_series": {
+              "value": "SYN",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura de stornare Seria SYN nr. 2024120002"
+            },
+            "provider_invoice_number": {
+              "value": "2024120002",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura de stornare Seria SYN nr. 2024120002"
+            },
+            "corrects_invoice_number": {
+              "value": "2024110007",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Stornare a facturii seria SYN nr. 2024110007"
+            },
+            "issued_on": {
+              "value": "2024-12-10",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Data emiterii: 10.12.2024"
+            },
+            "due_on": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "period_start": {
+              "value": "2024-10-01",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.10.2024 - 31.10.2024"
+            },
+            "period_end": {
+              "value": "2024-10-31",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.10.2024 - 31.10.2024"
+            },
+            "consumption": {
+              "value": "-180",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "1. Energie electrica activa -180 kWh x 0,68 = -122,40"
+            },
+            "unit": {
+              "value": "kWh",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "1. Energie electrica activa -180 kWh x 0,68 = -122,40"
+            },
+            "currency_code": {
+              "value": "RON",
+              "confidence": 0.8,
+              "source_page": 1,
+              "source_text": "Total fara TVA: -173,26"
+            },
+            "net_amount": {
+              "value": "-173.26",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Total fara TVA: -173,26"
+            },
+            "vat_base": {
+              "value": "-173.26",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: -173,26  TVA 19%: -32,92"
+            },
+            "vat_rate": {
+              "value": "0.19",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: -173,26  TVA 19%: -32,92"
+            },
+            "vat_amount": {
+              "value": "-32.92",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Baza de impozitare TVA: -173,26  TVA 19%: -32,92"
+            },
+            "total_amount": {
+              "value": "-206.18",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Total factura curenta: -206,18"
+            },
+            "balance_brought_forward": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "total_due": {
+              "value": "-206.18",
+              "confidence": 0.7,
+              "source_page": 1,
+              "source_text": "Total factura curenta: -206,18"
+            },
+            "read_method": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "line_items": [
+              {
+                "line_no": 1,
+                "charge_kind": "energy",
+                "raw_label": "Energie electrica activa",
+                "quantity": "-180",
+                "unit": "kWh",
+                "unit_price": "0.68",
+                "net_amount": "-122.40",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 1,
+                "source_text": "1. Energie electrica activa -180 kWh x 0,68 = -122,40"
+              },
+              {
+                "line_no": 2,
+                "charge_kind": "green_certificates",
+                "raw_label": "Certificate verzi",
+                "quantity": "-180",
+                "unit": "kWh",
+                "unit_price": "0.0725416",
+                "net_amount": "-13.06",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 1,
+                "source_text": "2. Certificate verzi -180 kWh x 0,0725416 = -13,06"
+              },
+              {
+                "line_no": 3,
+                "charge_kind": "distribution",
+                "raw_label": "Tarif distributie",
+                "quantity": "-180",
+                "unit": "kWh",
+                "unit_price": "0.21",
+                "net_amount": "-37.80",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 1,
+                "source_text": "3. Tarif distributie -180 kWh x 0,21 = -37,80"
+              }
+            ],
+            "meter_readings": []
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 300,
+        "output_tokens": 2100,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 4600
+      }
+    }
+  ]
+}

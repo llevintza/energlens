@@ -1,0 +1,574 @@
+{
+  "description": "Synthetic stand-in for the 2025-06 PPC bill: 12 lines, lines 7 and 12 subtotals, energy billed at two prices across sub-periods, a carried balance.",
+  "pages": [
+    [
+      "Furnizor: PPC Energie S.A.  CIF RO00000000",
+      "Factura fiscala Seria SYN nr. 2025060001",
+      "Data emiterii: 05.06.2025  Data scadentei: 05.07.2025",
+      "Cod client: CLIENT-SYNTH-01",
+      "Perioada facturare: 01.05.2025 - 31.05.2025",
+      "Serie contor SYN-METER  Index vechi 10250  Index nou 10515  Mod stabilire index: Citire distribuitor",
+      "Cantitate de facturat: 265 kWh"
+    ],
+    [
+      "1. Energie electrica activa 01.05-14.05 120 kWh x 0.68 = 81,60",
+      "2. Energie electrica activa 15.05-31.05 145 kWh x 0.72 = 104,40",
+      "3. Certificate verzi 265 kWh x 0.0725416 = 19,22",
+      "4. Contributie cogenerare 265 kWh x 0.0102 = 2,70",
+      "5. Acciza necomerciala 0.265 MWh x 6.2 = 1,64",
+      "6. Abonament 1 luna x 5.00 = 5,00",
+      "7. Total energie electrica activa = 214,56",
+      "8. Tarif transport TG 265 kWh x 0.0085 = 2,25",
+      "9. Tarif transport TL 265 kWh x 0.03 = 7,95",
+      "10. Servicii de sistem 265 kWh x 0.015 = 3,98",
+      "11. Tarif distributie 265 kWh x 0.21 = 55,65",
+      "12. Total servicii reglementate = 69,83",
+      "Total fara TVA: 284,39",
+      "Baza de impozitare TVA: 284,39  TVA 19%: 54,03",
+      "Total factura curenta: 338,42",
+      "Sold la data emiterii: 12,50",
+      "Total de plata: 350,92"
+    ]
+  ],
+  "responses": [
+    {
+      "id": "msg_01SYNTH000004",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000001",
+          "name": "get_page_text",
+          "input": {
+            "page": 1
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000002",
+          "name": "get_place_context",
+          "input": {}
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000003",
+          "name": "get_prior_bill",
+          "input": {}
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 6120,
+        "output_tokens": 210,
+        "cache_creation_input_tokens": 6050,
+        "cache_read_input_tokens": 0
+      }
+    },
+    {
+      "id": "msg_01SYNTH000006",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000005",
+          "name": "get_page_text",
+          "input": {
+            "page": 2
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 512,
+        "output_tokens": 95,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 6050
+      }
+    },
+    {
+      "id": "msg_01SYNTH000008",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000007",
+          "name": "check_arithmetic",
+          "input": {
+            "line_items": [
+              {
+                "charge_kind": "energy",
+                "net_amount": "81.60",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "energy",
+                "net_amount": "104.40",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "green_certificates",
+                "net_amount": "19.22",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "cogeneration",
+                "net_amount": "2.70",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "excise",
+                "net_amount": "1.64",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "standing_charge",
+                "net_amount": "5.00",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "other",
+                "net_amount": "214.56",
+                "is_subtotal": true
+              },
+              {
+                "charge_kind": "transmission",
+                "net_amount": "2.25",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "transmission",
+                "net_amount": "7.95",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "system_services",
+                "net_amount": "3.98",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "distribution",
+                "net_amount": "55.65",
+                "is_subtotal": false
+              },
+              {
+                "charge_kind": "other",
+                "net_amount": "69.83",
+                "is_subtotal": true
+              }
+            ],
+            "net_amount": "284.39",
+            "vat_base": "284.39",
+            "vat_rate": "0.19",
+            "vat_amount": "54.03",
+            "total_amount": "338.42"
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 890,
+        "output_tokens": 640,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 6400
+      }
+    },
+    {
+      "id": "msg_01SYNTH000010",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [
+        {
+          "type": "thinking",
+          "thinking": "",
+          "signature": "c3ludGhldGljLXNpZ25hdHVyZQ=="
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01SYNTH000009",
+          "name": "submit_extraction",
+          "input": {
+            "document_type": {
+              "value": "invoice",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2025060001"
+            },
+            "provider_name": {
+              "value": "PPC Energie S.A.",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Furnizor: PPC Energie S.A.  CIF RO00000000"
+            },
+            "provider_tax_id": {
+              "value": "RO00000000",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Furnizor: PPC Energie S.A.  CIF RO00000000"
+            },
+            "customer_code": {
+              "value": "CLIENT-SYNTH-01",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Cod client: CLIENT-SYNTH-01"
+            },
+            "provider_invoice_series": {
+              "value": "SYN",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2025060001"
+            },
+            "provider_invoice_number": {
+              "value": "2025060001",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Factura fiscala Seria SYN nr. 2025060001"
+            },
+            "corrects_invoice_number": {
+              "value": null,
+              "confidence": 0.97,
+              "source_page": null,
+              "source_text": null
+            },
+            "issued_on": {
+              "value": "2025-06-05",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Data emiterii: 05.06.2025  Data scadentei: 05.07.2025"
+            },
+            "due_on": {
+              "value": "2025-07-05",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Data emiterii: 05.06.2025  Data scadentei: 05.07.2025"
+            },
+            "period_start": {
+              "value": "2025-05-01",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.05.2025 - 31.05.2025"
+            },
+            "period_end": {
+              "value": "2025-05-31",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Perioada facturare: 01.05.2025 - 31.05.2025"
+            },
+            "consumption": {
+              "value": "265",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Cantitate de facturat: 265 kWh"
+            },
+            "unit": {
+              "value": "kWh",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Cantitate de facturat: 265 kWh"
+            },
+            "currency_code": {
+              "value": "RON",
+              "confidence": 0.8,
+              "source_page": 2,
+              "source_text": "Total fara TVA: 284,39"
+            },
+            "net_amount": {
+              "value": "284.39",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Total fara TVA: 284,39"
+            },
+            "vat_base": {
+              "value": "284.39",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Baza de impozitare TVA: 284,39  TVA 19%: 54,03"
+            },
+            "vat_rate": {
+              "value": "0.19",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Baza de impozitare TVA: 284,39  TVA 19%: 54,03"
+            },
+            "vat_amount": {
+              "value": "54.03",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Baza de impozitare TVA: 284,39  TVA 19%: 54,03"
+            },
+            "total_amount": {
+              "value": "338.42",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Total factura curenta: 338,42"
+            },
+            "balance_brought_forward": {
+              "value": "12.50",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Sold la data emiterii: 12,50"
+            },
+            "total_due": {
+              "value": "350.92",
+              "confidence": 0.97,
+              "source_page": 2,
+              "source_text": "Total de plata: 350,92"
+            },
+            "read_method": {
+              "value": "actual",
+              "confidence": 0.97,
+              "source_page": 1,
+              "source_text": "Serie contor SYN-METER  Index vechi 10250  Index nou 10515  Mod stabilire index: Citire distribuitor"
+            },
+            "line_items": [
+              {
+                "line_no": 1,
+                "charge_kind": "energy",
+                "raw_label": "Energie electrica activa",
+                "quantity": "120",
+                "unit": "kWh",
+                "unit_price": "0.68",
+                "net_amount": "81.60",
+                "tax_amount": null,
+                "period_start": "2025-05-01",
+                "period_end": "2025-05-14",
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "1. Energie electrica activa 01.05-14.05 120 kWh x 0.68 = 81,60"
+              },
+              {
+                "line_no": 2,
+                "charge_kind": "energy",
+                "raw_label": "Energie electrica activa",
+                "quantity": "145",
+                "unit": "kWh",
+                "unit_price": "0.72",
+                "net_amount": "104.40",
+                "tax_amount": null,
+                "period_start": "2025-05-15",
+                "period_end": "2025-05-31",
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "2. Energie electrica activa 15.05-31.05 145 kWh x 0.72 = 104,40"
+              },
+              {
+                "line_no": 3,
+                "charge_kind": "green_certificates",
+                "raw_label": "Certificate verzi",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.0725416",
+                "net_amount": "19.22",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "3. Certificate verzi 265 kWh x 0.0725416 = 19,22"
+              },
+              {
+                "line_no": 4,
+                "charge_kind": "cogeneration",
+                "raw_label": "Contributie cogenerare",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.0102",
+                "net_amount": "2.70",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "4. Contributie cogenerare 265 kWh x 0.0102 = 2,70"
+              },
+              {
+                "line_no": 5,
+                "charge_kind": "excise",
+                "raw_label": "Acciza necomerciala",
+                "quantity": "0.265",
+                "unit": "MWh",
+                "unit_price": "6.2",
+                "net_amount": "1.64",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "5. Acciza necomerciala 0.265 MWh x 6.2 = 1,64"
+              },
+              {
+                "line_no": 6,
+                "charge_kind": "standing_charge",
+                "raw_label": "Abonament",
+                "quantity": "1",
+                "unit": "luna",
+                "unit_price": "5.00",
+                "net_amount": "5.00",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "6. Abonament 1 luna x 5.00 = 5,00"
+              },
+              {
+                "line_no": 7,
+                "charge_kind": "other",
+                "raw_label": "Total energie electrica activa",
+                "quantity": null,
+                "unit": null,
+                "unit_price": null,
+                "net_amount": "214.56",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": true,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "7. Total energie electrica activa = 214,56"
+              },
+              {
+                "line_no": 8,
+                "charge_kind": "transmission",
+                "raw_label": "Tarif transport TG",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.0085",
+                "net_amount": "2.25",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "8. Tarif transport TG 265 kWh x 0.0085 = 2,25"
+              },
+              {
+                "line_no": 9,
+                "charge_kind": "transmission",
+                "raw_label": "Tarif transport TL",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.03",
+                "net_amount": "7.95",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "9. Tarif transport TL 265 kWh x 0.03 = 7,95"
+              },
+              {
+                "line_no": 10,
+                "charge_kind": "system_services",
+                "raw_label": "Servicii de sistem",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.015",
+                "net_amount": "3.98",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "10. Servicii de sistem 265 kWh x 0.015 = 3,98"
+              },
+              {
+                "line_no": 11,
+                "charge_kind": "distribution",
+                "raw_label": "Tarif distributie",
+                "quantity": "265",
+                "unit": "kWh",
+                "unit_price": "0.21",
+                "net_amount": "55.65",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": false,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "11. Tarif distributie 265 kWh x 0.21 = 55,65"
+              },
+              {
+                "line_no": 12,
+                "charge_kind": "other",
+                "raw_label": "Total servicii reglementate",
+                "quantity": null,
+                "unit": null,
+                "unit_price": null,
+                "net_amount": "69.83",
+                "tax_amount": null,
+                "period_start": null,
+                "period_end": null,
+                "is_subtotal": true,
+                "confidence": 0.96,
+                "source_page": 2,
+                "source_text": "12. Total servicii reglementate = 69,83"
+              }
+            ],
+            "meter_readings": [
+              {
+                "pod_code": null,
+                "meter_serial": "SYN-METER",
+                "register": null,
+                "index_previous": "10250",
+                "index_current": "10515",
+                "multiplier": null,
+                "read_method": "actual",
+                "read_on": null,
+                "quantity": "265",
+                "confidence": 0.95,
+                "source_page": 1,
+                "source_text": "Serie contor SYN-METER  Index vechi 10250  Index nou 10515  Mod stabilire index: Citire distribuitor"
+              }
+            ]
+          }
+        }
+      ],
+      "stop_reason": "tool_use",
+      "stop_sequence": null,
+      "stop_details": null,
+      "usage": {
+        "input_tokens": 320,
+        "output_tokens": 4210,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 7100
+      }
+    }
+  ]
+}

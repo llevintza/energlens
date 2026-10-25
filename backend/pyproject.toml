@@ -22,6 +22,10 @@ dependencies = [
     # unconditionally so switching a deployed instance to object storage is an
     # environment change, not a rebuild.
     "boto3>=1.34",
+    # The extraction agent (app/agent/, ADR-0024). 2.x for the async beta tool
+    # runner over message threads, httpx2 under it (which tests/agent_transport.py
+    # mocks), and the Files API out of beta as client.files.
+    "anthropic>=2.3",
 ]
 
 [dependency-groups]
