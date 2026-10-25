@@ -111,9 +111,11 @@ seed: ## Load demo data (demo@example.com / demo1234)
 
 ## -- run --------------------------------------------------------------------
 
+# The job worker (ADR-0022) is opted in here and nowhere else locally; an
+# exported WORKER_ENABLED=false still wins.
 dev-api: ## Run the API at http://localhost:8000 (docs at /docs)
 	@$(DB) preflight dev
-	$(BACKEND) uvicorn app.main:app --reload
+	WORKER_ENABLED="$${WORKER_ENABLED:-true}" $(BACKEND) uvicorn app.main:app --reload
 
 dev-web: $(NODE_STAMP) ## Run the SPA at http://localhost:5173
 	$(WEB) npm run dev
