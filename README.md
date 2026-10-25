@@ -181,7 +181,7 @@ the fine-grained UI.
 | Harness | Committed config | Notes |
 | --- | --- | --- |
 | Claude Code | `.mcp.json` | approve once when prompted |
-| Copilot CLI | `.mcp.json` | |
+| Copilot CLI | `.mcp.json` | folder must be trusted; expands `${VAR}` (see `AGENTS.md`) |
 | Cursor | `.cursor/mcp.json` | uses `${env:VAR}`, not `${VAR}` |
 | Gemini CLI | `.gemini/settings.json` | |
 | Codex | `.codex/config.toml` | project must be trusted |
