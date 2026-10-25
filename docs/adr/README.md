@@ -32,6 +32,7 @@ Start with [`docs/architecture.md`](../architecture.md) for the system view.
 | [0020](0020-invoice-identity-not-billing-period.md) | Identify a bill by its invoice number, not its billing period | Accepted | Data |
 | [0021](0021-pdf-blob-storage.md) | Keep bill PDFs in an object store, behind a two-backend Protocol | Accepted | Data |
 | [0022](0022-prove-the-deployed-commit.md) | Prove the deployed commit before smoking the API | Accepted | Ops |
+| [0023](0023-postgres-job-queue-in-process-worker.md) | Queue background jobs in Postgres, and run the worker inside the API process | Accepted | Backend |
 
 ## Status legend
 

@@ -70,6 +70,12 @@ def _test_database_url() -> str:
 # the development database, and every table in this one gets dropped.
 os.environ["DATABASE_URL"] = _test_database_url()
 os.environ["JWT_SECRET"] = "test-secret"
+# Pinned off whatever a developer's .env says. The worker would poll the very
+# rows the db_engine fixture deletes between tests — tests/test_jobs.py drives
+# it directly instead — and a configured token would mount /internal on the app
+# under test, which test_jobs.py asserts is absent when unconfigured.
+os.environ["WORKER_ENABLED"] = "false"
+os.environ["INTERNAL_TOKEN"] = ""
 
 import pytest
 from httpx import ASGITransport, AsyncClient

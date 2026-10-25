@@ -1,0 +1,87 @@
+name: Agent job sweep
+
+# The job queue lives in Postgres and its worker lives inside the API process
+# (docs/adr/0023-postgres-job-queue-in-process-worker.md). On Render's free tier
+# that process spins down after 15 minutes idle, so a user who uploads a bill
+# and closes the tab can leave a job queued — or half-run — with nothing awake
+# to finish it. This is the alarm clock: the request wakes the instance, whose
+# boot starts the worker, and the sweep itself requeues anything whose worker
+# died mid-job.
+on:
+  schedule:
+    # Every 15 minutes — Render's idle timeout. Scheduled workflows run only
+    # from the default branch, may be delayed or dropped when Actions is
+    # congested, and are disabled after 60 days without repository activity.
+    # A late sweep only delays a job; the job row is what makes it durable.
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: agent-sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 10
+    steps:
+      - name: Sweep the job queue
+        env:
+          API_URL: ${{ vars.API_URL }}
+          INTERNAL_TOKEN: ${{ secrets.INTERNAL_TOKEN }}
+        run: |
+          set -eu
+          # Not configured yet is a state, not an outage: failing here would
+          # file — and comment on — an alert issue every 15 minutes until the
+          # secret exists. The warning still shows on every run's summary.
+          if [ -z "$INTERNAL_TOKEN" ]; then
+            echo "::warning::INTERNAL_TOKEN secret is not set — skipping the sweep. Set it to the value of INTERNAL_TOKEN on the Render service."
+            exit 0
+          fi
+          [ -n "$API_URL" ] || { echo "::error::API_URL repository variable is not set."; exit 1; }
+
+          # A cold start HANGS the request for 30-60s rather than refusing it
+          # (see scripts/api.sh), so the budget is a long --max-time plus a few
+          # fresh connections for Render's edge flapping during a deploy.
+          # --retry-all-errors also retries 5xx; a 401 or 404 is not transient
+          # but is retried too, which costs a few seconds on a run that fails
+          # anyway.
+          status=0
+          body="$(curl --silent --show-error --fail-with-body \
+            --retry 4 --retry-all-errors --retry-delay 15 \
+            --connect-timeout 10 --max-time 120 \
+            -X POST -H "X-Internal-Token: $INTERNAL_TOKEN" \
+            "${API_URL%/}/internal/jobs/sweep")" || status=$?
+          echo "$body"
+          if [ "$status" -ne 0 ]; then
+            case "$body" in
+              *'"Not Found"'*)
+                echo "::error::/internal/jobs/sweep is not registered — INTERNAL_TOKEN is unset on the Render service, or the deploy predates it." ;;
+              *'invalid internal token'*)
+                echo "::error::401 — the INTERNAL_TOKEN secret does not match the Render service's INTERNAL_TOKEN." ;;
+              *)
+                echo "::error::sweep failed (curl exit $status)." ;;
+            esac
+            exit 1
+          fi
+
+  # Its own topic, so a red sweep neither closes nor is closed by the API smoke
+  # or Pages alerts. A persistently failing sweep opens one issue and closes it
+  # again on the first green run.
+  alert:
+    needs: [sweep]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          scripts/ci-alert.sh agent-sweep \
+            "${{ join(needs.*.result, ' ') }}" \
+            "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"

@@ -50,6 +50,15 @@ class Settings(BaseSettings):
     # own, so they expire fast.
     signed_url_expires_in: int = 300
 
+    # The in-process job worker (app/worker.py, ADR-0023). Off by default so
+    # nothing polls the database unless asked to: a background task started
+    # during pytest would fight the fixture that deletes every row between
+    # tests. `make dev-api` and render.yaml turn it on.
+    worker_enabled: bool = False
+    # Shared secret for POST /internal/jobs/sweep, sent as X-Internal-Token.
+    # Blank means the route is not registered at all — not "open".
+    internal_token: str = ""
+
     model_config = SettingsConfigDict(
         env_file=(_REPO_ROOT / ".env", ".env"),
         extra="ignore",

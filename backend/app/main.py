@@ -11,16 +11,18 @@ from app.auth.backend import auth_backend, oauth_redirect_backend
 from app.auth.oauth import github_oauth_client, google_oauth_client
 from app.auth.users import fastapi_users
 from app.config import settings
-from app.db import get_async_session
+from app.db import async_session_maker, engine, get_async_session
 from app.middleware import MaxBodySizeMiddleware
 from app.routers.account import router as account_router
 from app.routers.bill_documents import router as bill_documents_router
 from app.routers.bills import router as bills_router
+from app.routers.internal import build_internal_router
 from app.routers.oauth_login import router as oauth_login_router
 from app.routers.places import router as places_router
 from app.routers.series import router as series_router
 from app.schemas.user import UserCreate, UserRead, UserUpdate
 from app.storage import configure_storage
+from app.worker import start_worker, stop_worker
 
 logger = logging.getLogger(__name__)
 
@@ -43,9 +45,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     httpx's ASGITransport — what tests/conftest.py uses — does not run the
     lifespan, so this is inert during the suite. tests/test_storage.py drives it
     directly for that reason.
+
+    The job worker starts after the storage check, so a refused boot never
+    claims a job, and is cancelled and awaited on the way out (ADR-0023).
     """
     configure_storage()
-    yield
+    worker = start_worker(async_session_maker) if settings.worker_enabled else None
+    try:
+        yield
+    finally:
+        if worker is not None:
+            await stop_worker(worker)
+        # Pooled connections — the worker's and the requests' — would otherwise
+        # be left for the garbage collector, which reports unclosed transports.
+        await engine.dispose()
 
 
 app = FastAPI(title="Energlens API", lifespan=lifespan)
@@ -106,6 +119,11 @@ app.include_router(places_router)
 app.include_router(bills_router)
 app.include_router(bill_documents_router)
 app.include_router(series_router)
+
+# Absent, not 401, when no token is configured: an unguarded operator route is
+# the failure to make impossible, and a route that does not exist cannot be one.
+if settings.internal_token:
+    app.include_router(build_internal_router(settings.internal_token))
 
 
 # Liveness only, and deliberately so: this is render.yaml's healthCheckPath, and

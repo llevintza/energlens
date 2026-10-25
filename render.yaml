@@ -79,3 +79,16 @@ services:
         sync: false
       - key: S3_SECRET_ACCESS_KEY
         sync: false
+
+      # The in-process job worker (docs/adr/0023-postgres-job-queue-in-process-worker.md).
+      # It lives in this service because a Render background worker is a paid
+      # instance type and a second free service would need ~1,460 of the
+      # workspace's 750 instance-hours.
+      - key: WORKER_ENABLED
+        value: "true"
+      # Guards POST /internal/jobs/sweep, which .github/workflows/agent-sweep.yml
+      # calls every 15 minutes to wake the instance and reap stalled jobs. Set
+      # it here and as the INTERNAL_TOKEN repository secret, to the same value.
+      # Blank means the route is not registered at all.
+      - key: INTERNAL_TOKEN
+        sync: false
