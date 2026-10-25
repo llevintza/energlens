@@ -36,14 +36,20 @@ authenticates with a **per-contributor** GitHub token read from the
 `GITHUB_MCP_PAT` environment variable. No token is committed — the config files
 reference the variable name only.
 
-| Harness | Committed config |
-| --- | --- |
-| Claude Code | `.mcp.json` |
-| Copilot CLI | `.mcp.json` (trusted folders only) |
-| Cursor | `.cursor/mcp.json` (note: `${env:VAR}` syntax) |
-| Gemini CLI | `.gemini/settings.json` |
-| Codex | `.codex/config.toml` (trusted projects only) |
-| Muse Code | user-level only — see `README.md` |
+| Harness | Committed config | Instructions pointer |
+| --- | --- | --- |
+| Claude Code | `.mcp.json` | `CLAUDE.md` (`@AGENTS.md`) |
+| Copilot CLI | `.mcp.json` (trusted folders only) | `.github/copilot-instructions.md` |
+| Cursor | `.cursor/mcp.json` (note: `${env:VAR}` syntax) | `.cursor/rules/agents.mdc` (`alwaysApply: true`) |
+| Gemini CLI | `.gemini/settings.json` | `context.fileName` in `.gemini/settings.json` |
+| Codex | `.codex/config.toml` (trusted projects only) | none — reads `AGENTS.md` natively |
+| Muse Code | user-level only — see `README.md` | — |
+
+Adding a harness is one instructions pointer, one MCP config and one row here.
+A pointer only names `AGENTS.md` — this file stays the single source of truth,
+so never copy rules, commands or conventions into a stub.
+Codex, Jules, Factory, Amp, Zed and Devin read `AGENTS.md` natively and need no
+stub. `backend/tests/test_agent_pointers.py` fails if a pointer goes missing.
 
 **Copilot CLI expands `${GITHUB_MCP_PAT}` in `.mcp.json` headers**, so the
 shared file works for it as-is and needs no `~/.copilot/mcp-config.json`
