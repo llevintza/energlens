@@ -35,12 +35,30 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: scripts/smoke-pages.sh
 
+  # `smoke` proves the site loads, not that it is current. A push to main once
+  # produced no workflow run at all (issue #95), and the deploy's alert job lives
+  # inside the run that never happened — so the site silently kept serving the
+  # previous commit. This compares main with the live github-pages deployment
+  # instead, which catches that and any other reason the deploy fell behind.
+  current:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: read
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/pages-current.sh
+
   # Files under its own topic, separate from the deploy's. Sharing one issue
   # would let a green run here auto-close a still-broken deploy: a build that
   # dies on the API_URL guard never republishes, so the old — working — bundle
-  # stays live and this check keeps passing.
+  # stays live and `smoke` keeps passing. (`current` does go red then, once a
+  # frontend commit is stuck behind the guard; the deploy's own issue still
+  # closes only on a green deploy.)
   alert:
-    needs: [smoke]
+    needs: [smoke, current]
     if: always()
     runs-on: ubuntu-latest
     permissions:

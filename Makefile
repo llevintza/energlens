@@ -37,7 +37,7 @@ NODE_STAMP := $(ROOT)/frontend/node_modules/.package-lock.json
 # "it passed"; a missing target at least fails loudly. fmt/lint/lint-py arrive
 # with the linters that back them.
 .PHONY: help setup env db-up db-down db-ensure db-reset db-shell db-preflight \
-        migrate migration migrate-check lock-check seed dev-api dev-web \
+        migrate migration migrate-check migrate-heads lock-check seed dev-api dev-web \
         typecheck lint-web build-web \
         test test-backend test-ingest test-frontend \
         check ci-backend ci-frontend api-preflight api-smoke smoke-web clean
@@ -98,12 +98,20 @@ migrate-check: ## Assert migrations apply cleanly and match the models
 	DATABASE_URL="$$($(DB) url scratch)" $(BACKEND) alembic upgrade head
 	DATABASE_URL="$$($(DB) url scratch)" $(BACKEND) alembic check
 
+# No database: it only reads alembic/versions/, so it fails in a second, ahead
+# of everything that needs Postgres. Two heads means two PRs each added a
+# migration on the same parent; the message says which down_revision to repoint.
+# alembic/env.py runs the same check, which is how CI's migration step and the
+# Render boot log get the explanation too. See docs/migrations.md.
+migrate-heads: ## Assert Alembic has exactly one head (no database needed)
+	$(BACKEND) python -m app.migration_heads
+
 migration: ## New migration: make migration m="add reference to bill"
 	@test -n "$(m)" || { echo 'usage: make migration m="short description"' >&2; exit 1; }
 	@$(DB) preflight dev
 	$(BACKEND) alembic revision --autogenerate -m "$(m)"
 	@echo "Review the generated file before committing — autogenerate cannot see"
-	@echo "renames (it emits drop+add, which loses data). See docs/adr/0005-*.md."
+	@echo "renames (it emits drop+add, which loses data). See docs/migrations.md."
 
 seed: ## Load demo data (demo@example.com / demo1234)
 	@$(DB) preflight dev
@@ -162,7 +170,8 @@ lock-check: ## Assert both uv.lock files still match their pyproject.toml
 	$(UV) lock --check --directory $(ROOT)/ingest
 
 # Same order as backend-ci.yml: the migration gate runs before the suites.
-ci-backend: lock-check migrate-check test-backend test-ingest
+# migrate-heads leads because it needs no database; in CI, env.py runs it.
+ci-backend: lock-check migrate-heads migrate-check test-backend test-ingest
 
 # Lint runs first: it is the fastest of the four, and the cheapest to fail on.
 # Depends on test-frontend rather than relying on build-web to run tsc first, so

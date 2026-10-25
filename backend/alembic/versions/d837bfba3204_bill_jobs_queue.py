@@ -1,7 +1,7 @@
 """bill jobs queue
 
 Revision ID: d837bfba3204
-Revises: 1baee1682c46
+Revises: 68035abf3e52
 Create Date: 2026-10-24 22:37:46.131759
 
 """
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 revision: str = 'd837bfba3204'
-down_revision: Union[str, None] = '1baee1682c46'
+down_revision: Union[str, None] = '68035abf3e52'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
