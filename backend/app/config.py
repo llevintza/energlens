@@ -14,6 +14,12 @@ class Settings(BaseSettings):
     frontend_url: str = "http://localhost:5173"
     cors_origins: str = "http://localhost:5173"
 
+    # The commit this process was built from, served on /health so a deploy can
+    # be told apart from the revision before it (issue #91). Render sets
+    # RENDER_GIT_COMMIT at build time and at runtime; anywhere else — a clone,
+    # the suite, CI — it is unset and /health says so rather than guessing.
+    render_git_commit: str = "unknown"
+
     google_client_id: str = ""
     google_client_secret: str = ""
     github_client_id: str = ""
@@ -44,7 +50,7 @@ class Settings(BaseSettings):
     # own, so they expire fast.
     signed_url_expires_in: int = 300
 
-    # The in-process job worker (app/worker.py, ADR-0022). Off by default so
+    # The in-process job worker (app/worker.py, ADR-0023). Off by default so
     # nothing polls the database unless asked to: a background task started
     # during pytest would fight the fixture that deletes every row between
     # tests. `make dev-api` and render.yaml turn it on.

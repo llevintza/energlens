@@ -1,4 +1,4 @@
-"""The Postgres job queue: enqueue, claim, finish, reap. See ADR-0022.
+"""The Postgres job queue: enqueue, claim, finish, reap. See ADR-0023.
 
 Everything here takes a session and commits nothing except where a function
 says it does, with one exception that is the point of the module: ``claim_job``

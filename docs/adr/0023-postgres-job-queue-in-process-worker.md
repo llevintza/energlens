@@ -1,4 +1,4 @@
-# 0022. Queue background jobs in Postgres, and run the worker inside the API process
+# 0023. Queue background jobs in Postgres, and run the worker inside the API process
 
 - **Status:** Accepted
 - **Date:** 2026-10-24

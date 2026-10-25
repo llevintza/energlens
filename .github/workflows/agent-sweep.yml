@@ -1,7 +1,7 @@
 name: Agent job sweep
 
 # The job queue lives in Postgres and its worker lives inside the API process
-# (docs/adr/0022-postgres-job-queue-in-process-worker.md). On Render's free tier
+# (docs/adr/0023-postgres-job-queue-in-process-worker.md). On Render's free tier
 # that process spins down after 15 minutes idle, so a user who uploads a bill
 # and closes the tab can leave a job queued — or half-run — with nothing awake
 # to finish it. This is the alarm clock: the request wakes the instance, whose

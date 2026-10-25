@@ -1,4 +1,4 @@
-"""The in-process job worker: one asyncio task inside the API. See ADR-0022.
+"""The in-process job worker: one asyncio task inside the API. See ADR-0023.
 
 Started from the FastAPI lifespan in app/main.py when ``settings.worker_enabled``
 is true, with concurrency 1. It **polls** every 5 seconds, deliberately:
@@ -6,7 +6,7 @@ is true, with concurrency 1. It **polls** every 5 seconds, deliberately:
 whole lifetime, which fights pool sizing, Neon's idle timeouts and Render's
 spin-down — all to shave at most 5 s off a 20–60 s job. A ``NOTIFY`` on insert
 is fine later as a latency optimisation *on top of* polling; polling must stay
-the mechanism that guarantees a job runs. Read ADR-0022 before changing this.
+the mechanism that guarantees a job runs. Read ADR-0023 before changing this.
 """
 
 import asyncio

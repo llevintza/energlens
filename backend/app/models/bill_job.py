@@ -49,7 +49,7 @@ class BillJob(Base):
     """A unit of background work about one bill document, queued in Postgres.
 
     The queue lives here rather than in Redis or a second service because the
-    API runs on one free Render web service — see ADR-0022. Durability comes
+    API runs on one free Render web service — see ADR-0023. Durability comes
     from this row, not from the process: a worker that dies mid-job leaves the
     row ``claimed``/``running`` with a stale ``heartbeat_at``, and the reaper
     in app/services/jobs.py puts it back in the queue.

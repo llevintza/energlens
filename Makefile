@@ -119,7 +119,7 @@ seed: ## Load demo data (demo@example.com / demo1234)
 
 ## -- run --------------------------------------------------------------------
 
-# The job worker (ADR-0022) is opted in here and nowhere else locally; an
+# The job worker (ADR-0023) is opted in here and nowhere else locally; an
 # exported WORKER_ENABLED=false still wins.
 dev-api: ## Run the API at http://localhost:8000 (docs at /docs)
 	@$(DB) preflight dev
@@ -193,13 +193,15 @@ ci-frontend: lint-web test-frontend build-web
 api-preflight: ## Assert an Energlens API answers at API_URL (default: the repo variable)
 	@API_URL="$(API_URL)" $(API) preflight
 
-# Stronger than api-preflight: also asserts OpenAPI identity and that
-# DELETE /users/me is present — the check that catches "API up, revision stale"
-# (issue #48). Outside `make check` for the same reason as api-preflight.
+# Stronger than api-preflight: waits until /health names a commit containing the
+# newest backend/ commit on origin/main (as of your last fetch) — the check that
+# catches "API up, revision stale" (issues #48, #91) — then asserts the OpenAPI
+# contract. Outside `make check` for the same reason as api-preflight.
 #
-#   make api-smoke
+#   git fetch && make api-smoke
 #   make api-smoke API_URL=https://energlens-api.onrender.com
-api-smoke: ## Assert the deployed API's OpenAPI contract (default: the repo variable)
+#   make api-smoke API_EXPECT_COMMIT=<sha>
+api-smoke: ## Assert the deployed API runs main's backend, and its OpenAPI contract
 	@API_URL="$(API_URL)" $(API) smoke
 
 # The other half: api-preflight checks what the *next* deploy would bake in,

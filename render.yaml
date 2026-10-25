@@ -80,7 +80,7 @@ services:
       - key: S3_SECRET_ACCESS_KEY
         sync: false
 
-      # The in-process job worker (docs/adr/0022-postgres-job-queue-in-process-worker.md).
+      # The in-process job worker (docs/adr/0023-postgres-job-queue-in-process-worker.md).
       # It lives in this service because a Render background worker is a paid
       # instance type and a second free service would need ~1,460 of the
       # workspace's 750 instance-hours.

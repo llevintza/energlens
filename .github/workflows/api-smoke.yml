@@ -6,7 +6,10 @@ name: API smoke test
 # when nothing under backend/** changed.
 #
 # /health alone is not enough — issue #48 was a green health check on a stale
-# commit. scripts/api.sh smoke asserts the OpenAPI contract too.
+# commit — and neither is the OpenAPI contract, which held on the previous
+# revision too (issues #91, #97). scripts/api.sh smoke therefore waits until
+# /health names a commit containing the newest backend/ commit in github.sha,
+# and fails with "Deploy is stale" when the retry budget runs out first.
 on:
   push:
     branches: [main]
@@ -27,12 +30,19 @@ jobs:
     permissions:
       contents: read
     steps:
+      # Full history: smoke finds the newest commit under backend/ and checks the
+      # served commit descends from it, and a depth-1 clone can answer neither.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       # Free-tier builds routinely take several minutes; cold start another 30-60s.
-      # 24 x 45s + 30s curl = ~20 min wall, enough to outlast a stuck-looking build
-      # without treating a permanently stale API as "still deploying".
+      # 24 x 45s = ~18 min of waiting, enough to outlast a stuck-looking build
+      # without treating a permanently stale API as "still deploying". Each attempt
+      # can add a 30s /health, a 30s /openapi.json and a 20s-bounded fetch, so the
+      # worst case is ~32 min; the step timeout sits above it, so a hung host still
+      # ends in the script's own diagnosis rather than a bare cancellation.
       - name: Smoke the live API
-        timeout-minutes: 25
+        timeout-minutes: 35
         env:
           API_URL: ${{ vars.API_URL }}
           API_PREFLIGHT_ATTEMPTS: "24"

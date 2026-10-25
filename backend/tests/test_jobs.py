@@ -1,4 +1,4 @@
-"""The Postgres job queue, the in-process worker, and the sweep route (ADR-0022).
+"""The Postgres job queue, the in-process worker, and the sweep route (ADR-0023).
 
 The worker is never started by the app under test — settings.worker_enabled is
 pinned off in conftest.py — so these drive Worker and app/services/jobs.py
