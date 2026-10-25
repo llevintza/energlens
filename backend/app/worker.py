@@ -98,14 +98,14 @@ class Worker:
         beat = asyncio.create_task(self._heartbeat(job))
         try:
             async with self.session_maker() as session:
-                await jobs.mark_running(session, job.id)
+                await jobs.mark_running(session, job)
             handler = self.handlers.get(job.kind)
             if handler is None:
                 raise LookupError(f"no handler registered for job kind {job.kind!r}")
             await handler(job)
         except JobFailed as exc:
             async with self.session_maker() as session:
-                await jobs.mark_failed(session, job.id, str(exc) or type(exc).__name__)
+                await jobs.mark_failed(session, job, str(exc) or type(exc).__name__)
             logger.warning("job %s failed: %s", job.id, exc)
         except Exception as exc:
             async with self.session_maker() as session:
@@ -113,7 +113,7 @@ class Worker:
             logger.exception("job %s raised; now %s", job.id, status)
         else:
             async with self.session_maker() as session:
-                await jobs.mark_succeeded(session, job.id)
+                await jobs.mark_succeeded(session, job)
         finally:
             beat.cancel()
             with suppress(asyncio.CancelledError):
@@ -125,7 +125,7 @@ class Worker:
             await asyncio.sleep(self.heartbeat_interval)
             try:
                 async with self.session_maker() as session:
-                    await jobs.heartbeat(session, job.id)
+                    await jobs.heartbeat(session, job)
             except Exception:
                 # A missed beat is survivable; twelve of them is what the reaper
                 # is for. Never let it take the handler down with it.

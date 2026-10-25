@@ -111,43 +111,52 @@ def claim_statement():
     )
 
 
-async def mark_running(session: AsyncSession, job_id: uuid.UUID) -> None:
+# Every write a worker makes after claiming is fenced to *its* claim, not just
+# to the job being active. ``attempts`` is the claim token: claiming increments
+# it, so once the reaper has taken a job back and someone has claimed it again,
+# the process it gave up on no longer matches. Without that, a late finish or a
+# stray heartbeat from the old claimant would land on the new claim — a double
+# run that ends with the wrong status, and a dead claim kept looking alive.
+
+
+def _still_ours(job: BillJob):
+    return (
+        (BillJob.id == job.id)
+        & (BillJob.attempts == job.attempts)
+        & BillJob.status.in_((JOB_CLAIMED, JOB_RUNNING))
+    )
+
+
+async def mark_running(session: AsyncSession, job: BillJob) -> None:
     await session.execute(
         update(BillJob)
-        .where(BillJob.id == job_id, BillJob.status == JOB_CLAIMED)
+        .where(_still_ours(job), BillJob.status == JOB_CLAIMED)
         .values(status=JOB_RUNNING, heartbeat_at=func.now())
     )
     await session.commit()
 
 
-async def heartbeat(session: AsyncSession, job_id: uuid.UUID) -> None:
+async def heartbeat(session: AsyncSession, job: BillJob) -> None:
     await session.execute(
-        update(BillJob)
-        .where(BillJob.id == job_id, BillJob.status.in_((JOB_CLAIMED, JOB_RUNNING)))
-        .values(heartbeat_at=func.now())
+        update(BillJob).where(_still_ours(job)).values(heartbeat_at=func.now())
     )
     await session.commit()
 
 
-# The finishing writes are all guarded on the job still being ours (claimed or
-# running). If the reaper has already taken it back, a late finish from the
-# process it gave up on must not overwrite whatever has happened since.
-
-
-async def mark_succeeded(session: AsyncSession, job_id: uuid.UUID) -> None:
+async def mark_succeeded(session: AsyncSession, job: BillJob) -> None:
     await session.execute(
         update(BillJob)
-        .where(BillJob.id == job_id, BillJob.status.in_((JOB_CLAIMED, JOB_RUNNING)))
+        .where(_still_ours(job))
         .values(status=JOB_SUCCEEDED, last_error=None)
     )
     await session.commit()
 
 
-async def mark_failed(session: AsyncSession, job_id: uuid.UUID, error: str) -> None:
+async def mark_failed(session: AsyncSession, job: BillJob, error: str) -> None:
     """The handler ran and reached a verdict: the result is bad. No retry."""
     await session.execute(
         update(BillJob)
-        .where(BillJob.id == job_id, BillJob.status.in_((JOB_CLAIMED, JOB_RUNNING)))
+        .where(_still_ours(job))
         .values(status=JOB_FAILED, last_error=error[:_MAX_ERROR_CHARS])
     )
     await session.commit()
@@ -164,11 +173,7 @@ async def retry_or_bury(session: AsyncSession, job: BillJob, error: str) -> str:
     values: dict = {"status": status, "last_error": error[:_MAX_ERROR_CHARS]}
     if status == JOB_QUEUED:
         values["run_after"] = func.now() + backoff(job.attempts)
-    await session.execute(
-        update(BillJob)
-        .where(BillJob.id == job.id, BillJob.status.in_((JOB_CLAIMED, JOB_RUNNING)))
-        .values(**values)
-    )
+    await session.execute(update(BillJob).where(_still_ours(job)).values(**values))
     await session.commit()
     return status
 

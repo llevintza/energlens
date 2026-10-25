@@ -1,7 +1,16 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, func
+from sqlalchemy import (
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    Text,
+    func,
+)
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -57,6 +66,14 @@ class BillJob(Base):
 
     __tablename__ = "bill_jobs"
     __table_args__ = (
+        # A typo in a status or kind string would otherwise create a job that no
+        # query ever claims or reaps. Built from the constants so they cannot
+        # drift; the migration spells the same lists out literally.
+        CheckConstraint(
+            "status IN (" + ", ".join(f"'{s}'" for s in JOB_STATUSES) + ")",
+            name="ck_bill_jobs_status",
+        ),
+        CheckConstraint(f"kind IN ('{JOB_KIND_EXTRACT}')", name="ck_bill_jobs_kind"),
         # What the claim query filters on. A partial index on status = 'queued'
         # would be smaller; at this volume it is not worth the migration
         # complexity.

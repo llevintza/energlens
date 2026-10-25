@@ -35,7 +35,10 @@ def upgrade() -> None:
     sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['document_id'], ['bill_documents.id'], ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['place_id'], ['places.id'], ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('id')
+    sa.PrimaryKeyConstraint('id'),
+    # Autogenerate does not emit CHECK constraints; these mirror BillJob.
+    sa.CheckConstraint("status IN ('queued', 'claimed', 'running', 'succeeded', 'failed', 'dead', 'cancelled')", name='ck_bill_jobs_status'),
+    sa.CheckConstraint("kind IN ('extract')", name='ck_bill_jobs_kind'),
     )
     op.create_index('ix_bill_jobs_claimable', 'bill_jobs', ['status', 'run_after'], unique=False)
     op.create_index('ix_bill_jobs_document_kind', 'bill_jobs', ['document_id', 'kind'], unique=False)

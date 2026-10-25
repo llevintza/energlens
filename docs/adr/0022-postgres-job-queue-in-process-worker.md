@@ -104,6 +104,16 @@ this design keeps it that way.
   disables schedules after 60 days without repository activity.
 - **Render's SIGTERM grace on deploy** is short; a job in flight is left for the
   reaper rather than finished.
+- **An interrupted job spends an attempt.** The attempt is counted on claim, so
+  every deploy or spin-down that catches a job mid-run costs it one. With
+  `max_attempts` at 3, two unlucky redeploys plus one real upstream error end a
+  job `dead`. Accepted at this volume; raise `max_attempts` if it shows up.
+- **A handler must not block the event loop.** A synchronous PDF parse or SDK
+  call longer than `STALE_AFTER` (2 min) stops the heartbeat task too, and the
+  reaper requeues a job that is still running. Every post-claim write is fenced
+  on `attempts`, so the stale run cannot overwrite the new claim, but the work
+  is still done twice — handlers (#59 first) run blocking calls through
+  `asyncio.to_thread`.
 
 ## Alternatives considered
 

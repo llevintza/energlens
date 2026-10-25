@@ -56,9 +56,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         if worker is not None:
             await stop_worker(worker)
-            # The worker's pooled connections would otherwise be left for the
-            # garbage collector, which reports them as unclosed transports.
-            await engine.dispose()
+        # Pooled connections — the worker's and the requests' — would otherwise
+        # be left for the garbage collector, which reports unclosed transports.
+        await engine.dispose()
 
 
 app = FastAPI(title="Energlens API", lifespan=lifespan)

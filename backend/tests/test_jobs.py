@@ -197,8 +197,8 @@ class TestReaper:
     ):
         job = await enqueue(await upload())
         async with maker() as session:
-            await jobs.claim_job(session)
-            await jobs.mark_running(session, job.id)
+            claimed = await jobs.claim_job(session)
+            await jobs.mark_running(session, claimed)
         await make_stale(maker, job.id)
 
         assert await worker(maker).reap() == {"requeued": 1, "dead": 0}
@@ -208,6 +208,37 @@ class TestReaper:
         done = await fetch(maker, job.id)
         assert done.status == "succeeded"
         assert done.attempts == 2
+
+    async def test_a_late_write_from_the_reaped_claim_does_not_touch_the_new_one(
+        self, upload, enqueue, maker
+    ):
+        """The old process wakes up after the reaper gave its job to someone else."""
+        job = await enqueue(await upload())
+        async with maker() as session:
+            stale_claim = await jobs.claim_job(session)
+        await make_stale(maker, job.id)
+        assert await worker(maker).reap() == {"requeued": 1, "dead": 0}
+        async with maker() as session:
+            new_claim = await jobs.claim_job(session)
+            await jobs.mark_running(session, new_claim)
+        assert new_claim.attempts == stale_claim.attempts + 1
+        before = await fetch(maker, job.id)
+
+        async with maker() as session:
+            await jobs.heartbeat(session, stale_claim)
+            await jobs.mark_succeeded(session, stale_claim)
+            await jobs.mark_failed(session, stale_claim, "late verdict")
+            await jobs.retry_or_bury(session, stale_claim, "late error")
+
+        after = await fetch(maker, job.id)
+        assert after.status == "running"
+        assert after.attempts == new_claim.attempts
+        assert after.heartbeat_at == before.heartbeat_at
+        assert after.last_error == before.last_error
+
+        async with maker() as session:
+            await jobs.mark_succeeded(session, new_claim)
+        assert (await fetch(maker, job.id)).status == "succeeded"
 
     async def test_a_live_job_is_left_alone(self, upload, enqueue, maker):
         job = await enqueue(await upload())
