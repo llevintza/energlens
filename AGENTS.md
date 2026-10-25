@@ -82,6 +82,7 @@ ones run a preflight that explains failures instead of raising
 | One backend test | `make test-backend PYTEST_ARGS="-k currency"` |
 | New migration | `make migration m="add reference to bill"` |
 | Check migrations match the models | `make migrate-check` |
+| Check for one Alembic head (no DB) — protocol in [`docs/migrations.md`](docs/migrations.md) | `make migrate-heads` |
 | Reset the database | `make db-reset` (drops both databases) |
 | Run the app | `make dev-api`, `make dev-web` |
 | Check the deployed API answers | `make api-preflight` |
