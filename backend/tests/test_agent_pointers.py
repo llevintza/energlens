@@ -21,20 +21,27 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 
-STUBS = ["CLAUDE.md", ".github/copilot-instructions.md", ".cursor/rules/agents.mdc"]
+# Each stub and the text it must contain. Claude Code imports a file only
+# through `@path`, so a plain mention of AGENTS.md in CLAUDE.md would load nothing.
+STUBS = {
+    "CLAUDE.md": "@AGENTS.md",
+    ".github/copilot-instructions.md": "AGENTS.md",
+    ".cursor/rules/agents.mdc": "AGENTS.md",
+}
 
 
-@pytest.mark.parametrize("stub", STUBS)
-def test_stub_points_at_agents_md(stub):
+@pytest.mark.parametrize(("stub", "pointer"), STUBS.items())
+def test_stub_points_at_agents_md(stub, pointer):
     path = REPO_ROOT / stub
     assert path.is_file(), f"{stub} is missing; its harness would skip AGENTS.md"
-    assert "AGENTS.md" in path.read_text(), f"{stub} should point at AGENTS.md"
+    assert pointer in path.read_text(), f"{stub} should point at AGENTS.md with {pointer}"
 
 
 def test_cursor_rule_always_applies():
     # Without alwaysApply, Cursor attaches the rule only when its description or
     # globs match, so most chats would never see the pointer.
     text = (REPO_ROOT / ".cursor" / "rules" / "agents.mdc").read_text()
+    assert text.startswith("---"), "agents.mdc should open with a --- frontmatter block"
     frontmatter = text.split("---")[1]
     assert "alwaysApply: true" in frontmatter.splitlines()
 
@@ -45,3 +52,11 @@ def test_gemini_loads_agents_md():
     if isinstance(names, str):
         names = [names]
     assert "AGENTS.md" in names, ".gemini/settings.json context.fileName lacks AGENTS.md"
+
+
+def test_no_gemini_md_beside_agents_md():
+    # context.fileName keeps GEMINI.md so Gemini still loads the user's own
+    # ~/.gemini/GEMINI.md, but a committed one would be a second source of truth.
+    assert not (REPO_ROOT / "GEMINI.md").exists(), (
+        "GEMINI.md would compete with AGENTS.md; put the rules in AGENTS.md instead"
+    )
