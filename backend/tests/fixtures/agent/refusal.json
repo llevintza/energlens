@@ -1,0 +1,36 @@
+{
+  "description": "The safety classifiers decline the first turn (after any server-side fallback). content is empty.",
+  "pages": [
+    [
+      "Furnizor: PPC Energie S.A.  CIF RO00000000",
+      "Factura fiscala Seria SYN nr. 2026070004",
+      "Perioada facturare: 01.06.2026 - 30.06.2026",
+      "1. Energie electrica activa 640 kWh x 0,868547 = 555,87",
+      "Total fara TVA: 555,87",
+      "Baza de impozitare TVA: 554,97  TVA 21%: 116,54",
+      "Total factura curenta: 672,41"
+    ]
+  ],
+  "responses": [
+    {
+      "id": "msg_01SYNTH000032",
+      "type": "message",
+      "role": "assistant",
+      "model": "claude-opus-5-5",
+      "content": [],
+      "stop_reason": "refusal",
+      "stop_sequence": null,
+      "stop_details": {
+        "type": "refusal",
+        "category": "cyber",
+        "explanation": "Synthetic refusal for the test transport."
+      },
+      "usage": {
+        "input_tokens": 3900,
+        "output_tokens": 0,
+        "cache_creation_input_tokens": 3850,
+        "cache_read_input_tokens": 0
+      }
+    }
+  ]
+}

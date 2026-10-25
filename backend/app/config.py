@@ -63,6 +63,19 @@ class Settings(BaseSettings):
     # have a rate for it — tests/test_agent_pricing.py fails the build if not,
     # because a model bump that reports $0.00 is worse than a red CI run.
     agent_model: str = "claude-opus-5-5"
+    # The rest of the agent's knobs (app/agent/extract.py). Effort defaults to
+    # medium — the corpus is form extraction with arithmetic, not open-ended
+    # reasoning; #58's eval sweeps it rather than this guess. max_tokens caps
+    # thinking and the answer together, so it is sized for a twelve-line bill
+    # with a span on every value, not for a chat reply.
+    agent_effort: str = "medium"
+    agent_max_tokens: int = 16000
+    # Turns, not tool calls. A clean run is ~5: read, context, check, submit.
+    # Hitting the cap records the run as over_budget.
+    agent_max_iterations: int = 12
+    # Server-side refusal fallback ("default" routing). On a classifier decline
+    # the API re-runs the turn on another model inside the same call.
+    agent_refusal_fallback: bool = True
 
     model_config = SettingsConfigDict(
         env_file=(_REPO_ROOT / ".env", ".env"),
