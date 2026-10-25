@@ -1,0 +1,34 @@
+# Region profiles for the extraction agent (#57). DATA, NOT CODE.
+#
+# A new country or provider is a new Markdown file in this directory and a
+# [[profile]] row below — never a migration, never an `if country == ...` in
+# app/agent/. app/agent/regions.py reads this file generically, and
+# tests/test_agent_profiles.py proves a second profile needs no Python.
+#
+# Selection (app/agent/regions.py: select_profile):
+#   1. a row whose country matches place.country_code and one of whose
+#      provider_patterns appears in the bill's first page or the prior bill's
+#      provider name (case-insensitive substring);
+#   2. otherwise the row for that country with country_default = true;
+#   3. otherwise no profile — the agent runs on the base prompt alone.
+#
+# Fields:
+#   id                 recorded on agent_runs.profile; keep it stable.
+#   country            ISO 3166-1 alpha-2, as on places.country_code.
+#   file               the Markdown file in this directory, appended to the
+#                      system prompt verbatim.
+#   provider_patterns  substrings that identify the provider on a bill.
+#   country_default    use for this country when no provider pattern matches.
+#                      At most one per country.
+
+[[profile]]
+id = "ro_ppc"
+country = "RO"
+file = "ro_ppc.md"
+# The supplier renamed at 2025-03: "PPC Energie Muntenia" → "PPC Energie".
+# One substring covers both; the rename is why it is a substring and not a
+# full name.
+provider_patterns = ["PPC Energie"]
+# The charge structure is ANRE-regulated and shared by every Romanian
+# supplier, so this profile is a better start for an unknown RO bill than none.
+country_default = true
