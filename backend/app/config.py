@@ -59,6 +59,11 @@ class Settings(BaseSettings):
     # Blank means the route is not registered at all — not "open".
     internal_token: str = ""
 
+    # The model the extraction agent (#57) calls. app/agent/pricing.py must
+    # have a rate for it — tests/test_agent_pricing.py fails the build if not,
+    # because a model bump that reports $0.00 is worse than a red CI run.
+    agent_model: str = "claude-opus-5-5"
+
     model_config = SettingsConfigDict(
         env_file=(_REPO_ROOT / ".env", ".env"),
         extra="ignore",
