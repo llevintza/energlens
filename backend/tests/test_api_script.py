@@ -118,11 +118,14 @@ def run(repo_root: Path, api, cmd: str = "smoke", **env: str):
     environ = git_env()
     for var in ("GITHUB_ACTIONS", "API_URL", "API_EXPECT_COMMIT"):
         environ.pop(var, None)
+    # Defaults first, so a test can override any of them.
     environ.update(
-        API_PREFLIGHT_ATTEMPTS="2",
-        API_PREFLIGHT_INTERVAL="0",
-        API_PREFLIGHT_CHECK_DB="0",
-        **env,
+        {
+            "API_PREFLIGHT_ATTEMPTS": "2",
+            "API_PREFLIGHT_INTERVAL": "0",
+            "API_PREFLIGHT_CHECK_DB": "0",
+            **env,
+        }
     )
     return subprocess.run(
         ["sh", str(repo_root / "scripts" / "api.sh"), cmd, api["url"]],
@@ -193,6 +196,17 @@ class TestSmokeWaitsForTheCommit:
         assert r.returncode == 1
         assert "Deploy is stale" not in r.stderr
         assert "OpenAPI contract does not hold" in r.stderr
+
+    def test_a_broken_contract_on_the_right_commit_fails_fast(self, repo, api):
+        """The commit is proven live, so waiting out the deploy budget is pointless."""
+        root, c = repo
+        api["health"] = {"status": "ok", "commit": c["backend_v2"]}
+        api["openapi"] = {"info": {"title": "Energlens API"}, "paths": {}}
+        r = run(root, api, API_PREFLIGHT_ATTEMPTS="5")
+        assert r.returncode == 1
+        assert "attempt 1/5" in r.stderr
+        assert "attempt 2/5" not in r.stderr
+        assert "does not hold after 2 attempts" in r.stderr
 
     def test_fails_clearly_without_a_commit_to_expect(self, repo, api):
         root, c = repo

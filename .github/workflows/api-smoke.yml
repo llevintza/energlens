@@ -36,10 +36,13 @@ jobs:
         with:
           fetch-depth: 0
       # Free-tier builds routinely take several minutes; cold start another 30-60s.
-      # 24 x 45s + 30s curl = ~20 min wall, enough to outlast a stuck-looking build
-      # without treating a permanently stale API as "still deploying".
+      # 24 x 45s = ~18 min of waiting, enough to outlast a stuck-looking build
+      # without treating a permanently stale API as "still deploying". Each attempt
+      # can add a 30s /health, a 30s /openapi.json and a 20s-bounded fetch, so the
+      # worst case is ~32 min; the step timeout sits above it, so a hung host still
+      # ends in the script's own diagnosis rather than a bare cancellation.
       - name: Smoke the live API
-        timeout-minutes: 25
+        timeout-minutes: 35
         env:
           API_URL: ${{ vars.API_URL }}
           API_PREFLIGHT_ATTEMPTS: "24"

@@ -1,8 +1,9 @@
 """The two health endpoints, and the split between them.
 
 /health is what render.yaml points the platform at, so it must stay a pure
-liveness probe — it also names the commit it runs, which is fixed per process. /health/db is the readiness half — it is the only thing that
-proves the database is reachable, and it must never leak the DSN while saying so.
+liveness probe — it also names the commit it runs, which is fixed per process.
+/health/db is the readiness half — it is the only thing that proves the
+database is reachable, and it must never leak the DSN while saying so.
 """
 
 import contextlib

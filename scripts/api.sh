@@ -46,6 +46,10 @@ TIMEOUT="${API_PREFLIGHT_TIMEOUT:-30}"
 # instance wakes. A slow *connect* therefore means a dead host, not a cold one —
 # retry rather than burn the whole per-attempt budget on it.
 CONNECT_TIMEOUT="${API_PREFLIGHT_CONNECT_TIMEOUT:-10}"
+# Smoke only. Once the served commit is proven live, a broken contract is
+# deterministic — waiting out the deploy budget will not fix it. Two tries
+# covers a cold start answering /openapi.json late; then it fails.
+CONTRACT_ATTEMPTS="${API_SMOKE_CONTRACT_ATTEMPTS:-2}"
 
 say() { printf '%s\n' "$*" >&2; }
 die() { printf '%s\n' "$*" >&2; exit 1; }
@@ -124,13 +128,19 @@ expected_commit() {
 # Live means the served commit *contains* the expected one, not equals it: a
 # later merge may already have deployed by the time this run polls, and that is
 # a current API, not a stale one. A served commit this clone has never seen is
-# fetched once by SHA; if it is still unknown — "unknown" itself, a short SHA
-# from a rewritten history — it cannot be proved live, so it is not.
+# fetched once by SHA — once per run, not once per attempt, and a stalled
+# transfer is abandoned after 20 s rather than hanging the attempt (there is no
+# portable timeout(1); git's own low-speed limit works on macOS and Linux). If it
+# is still unknown — "unknown" itself, a short SHA from a rewritten history — it
+# cannot be proved live, so it is not.
+fetched=
 commit_is_live() {
   [ "$1" != unknown ] || return 1
-  git_repo cat-file -e "$1^{commit}" 2>/dev/null ||
-    git_repo fetch --quiet origin "$1" 2>/dev/null ||
-    true
+  if ! git_repo cat-file -e "$1^{commit}" 2>/dev/null && [ "$1" != "$fetched" ]; then
+    fetched="$1"
+    git_repo -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=20 \
+      fetch --quiet origin "$1" 2>/dev/null || true
+  fi
   git_repo merge-base --is-ancestor "$2" "$1" 2>/dev/null
 }
 
@@ -419,6 +429,7 @@ cmd_smoke() {
   last_commit=pending
   last_openapi=pending
   served=unknown
+  contract_fails=0
   while :; do
     rc=0
     out="$(curl -sS --connect-timeout "$CONNECT_TIMEOUT" --max-time "$TIMEOUT" \
@@ -438,6 +449,8 @@ cmd_smoke() {
           return 0
         fi
         last_openapi=stale
+        contract_fails=$((contract_fails + 1))
+        [ "$contract_fails" -lt "$CONTRACT_ATTEMPTS" ] || break
       else
         last_commit=stale
         last_openapi=pending
@@ -471,7 +484,7 @@ cmd_smoke() {
   fi
 
   if [ "$last_health" = ok ] && [ "$last_openapi" = stale ]; then
-    summary="API_URL ($url) serves commit $served but its OpenAPI contract does not hold after $ATTEMPTS attempts"
+    summary="API_URL ($url) serves commit $served but its OpenAPI contract does not hold after $n attempts"
     say "$summary."
     say "The deploy is current, so this is not issue #48: the app on main no longer"
     say "matches what check_openapi_contract in scripts/api.sh asserts. Fix whichever"
