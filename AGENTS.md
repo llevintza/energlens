@@ -39,11 +39,29 @@ reference the variable name only.
 | Harness | Committed config |
 | --- | --- |
 | Claude Code | `.mcp.json` |
-| Copilot CLI | `.mcp.json` |
+| Copilot CLI | `.mcp.json` (trusted folders only) |
 | Cursor | `.cursor/mcp.json` (note: `${env:VAR}` syntax) |
 | Gemini CLI | `.gemini/settings.json` |
 | Codex | `.codex/config.toml` (trusted projects only) |
 | Muse Code | user-level only — see `README.md` |
+
+**Copilot CLI expands `${GITHUB_MCP_PAT}` in `.mcp.json` headers**, so the
+shared file works for it as-is and needs no `~/.copilot/mcp-config.json`
+fallback. Verified on 2026-10-24 with Copilot CLI 1.0.103 by pointing header
+variants at a local server that logged what arrived: `${VAR}` and `$VAR` were
+sent expanded, but `${env:VAR}` was sent literally, so do not copy Cursor's
+syntax into `.mcp.json`. Because bare `$VAR` expands too, a literal `$` in a
+header value gets mangled — keep values in the environment, not in the file.
+Copilot loads `.mcp.json` only from a folder it trusts: accept the trust prompt
+in an interactive session, or pass `--trust-folder` with `copilot -p`. In that
+same 1.0.103 test, an untrusted folder's `github` server was skipped silently,
+which looks like missing tools, not a 401 — re-check after upgrading Copilot.
+
+**Trusting a folder is a security decision, not a convenience.** Copilot
+expands *any* environment variable named in a trusted folder's `.mcp.json`
+headers and sends it to whatever `url` the file names, so a repository you
+trust can ship your cloud keys or tokens to its own host. Read `.mcp.json` —
+every `url` and every variable in its headers — before trusting a folder.
 
 **If the `github` MCP tools are missing or the server reports 401/failed, the
 cause is almost always an unset `GITHUB_MCP_PAT`.** To repair:
