@@ -32,6 +32,29 @@ export type ReadMethod =
   | 'regularisation'
   | 'mixed'
 
+/**
+ * The canonical, cross-region taxonomy a charge line is grouped by. The provider's own
+ * wording travels beside it as `raw_label`; `other` is a real kind, not an error.
+ */
+export type ChargeKind =
+  | 'energy'
+  | 'supply'
+  | 'transmission'
+  | 'distribution'
+  | 'system_services'
+  | 'cogeneration'
+  | 'green_certificates'
+  | 'capacity'
+  | 'levy'
+  | 'excise'
+  | 'vat'
+  | 'standing_charge'
+  | 'reactive_energy'
+  | 'metering'
+  | 'discount'
+  | 'balance'
+  | 'other'
+
 // Money/decimal fields arrive as strings to preserve precision.
 export interface Bill {
   id: string

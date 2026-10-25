@@ -159,3 +159,9 @@ class Bill(Base):
     )
 
     place: Mapped["Place"] = relationship(back_populates="bills")  # noqa: F821
+    line_items: Mapped[list["BillLineItem"]] = relationship(  # noqa: F821
+        back_populates="bill", cascade="all, delete-orphan"
+    )
+    meter_readings: Mapped[list["BillMeterReading"]] = relationship(  # noqa: F821
+        back_populates="bill", cascade="all, delete-orphan"
+    )
